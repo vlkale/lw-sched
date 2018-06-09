@@ -1,1 +1,16 @@
-Note that the compilerTuning should be part of the uSchedTransform
+# Description 
+The code of my loop scheduling library containing the key idea for the within-node solution proposed and studied in my dissertation. 
+
+For the general solution for MPI+OpenMP application programs, you need to link this library with files from a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
+The library is in another repository on my github page named 'slack-trace' 
+
+---
+
+# Notes for Installing and Using the Library 
+- Note that the compilerTuning should be part of the uSchedTransform
+
+---
+
+# TODO:
+
+- Add more information about installing and using the library 

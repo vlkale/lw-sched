@@ -6,22 +6,29 @@ The vSched.c library contains the functions for initializing the scheduler, loop
 There are two example app code files included in this folder:  one is using pthreads, called appFor_vSched.c, and the other
 is using OpenMP, called appFor_vSchedOpenMP.c.
 
+# Installing/configuring.
+
+The code doesn't have a configure file; I've just left out the configure file for now. I'm modifying the configure file to ensure its correctness before adding it to this open-source version. I intend to add it in the next month. I believe the
+pthBarrierOSX.h should work for any Mac OS version. If you'd like to run on a Mac, you'll be using the pthBarrierOSX.h file when running the code.
+
+
+
+# Running the Code 
+
 1. Pthreads example
-a. To compile the pthreads example, type:
+ a. To compile the pthreads example, type:
+ 
+      make clean; make
 
-  make clean; make
+ b. To run the pthreads example on Mac, you may need the pthBarrierOSX.c/pthBarrierOSX.h file, included in this directory.
+    This is taken care of in the Makefile, as below:
 
-b. To run the pthreads example on Mac, you may need the pthBarrierOSX.c/pthBarrierOSX.h file, included in this directory.
-This is taken care of in the Makefile, as below:
-
-  make clean; make test_vSchedOnMac
-
-
-Also, include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
+  make clean; make test_vSchedOnMac; 
+  
+Include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
 
 2. To run the OpenMP example:
 
-(to be added, but this is to note for now that this can also be done also using my library).
+set OMP_NUM_THREADS={number_of_cores_on_node} make clean; make test_vSched_OMP; 
 
-Note: Currently, I've just left out the configure file, but I will work on getting the proper one when I have a bit more time(I believe the
-pthBarrierOSX.h should solve some of the problems). -VK 3/26/14
+This can also be done also using my library.

@@ -1,18 +1,27 @@
-# Description 
+This is the library for lightweight scheduling which includes a constraint for reduction of cache misses and locking overhead.
+
+The vSched.c library contains the functions for initializing the scheduler, loop_start_<strat>, and the dequeueing functions
+(loop_next_<strat>), where <strat> is the particular strategy. The implementor can add other strategies, by looking at the example functions in vSched.c shown.
+
+There are two example app code files included in this folder:  one is using pthreads, called appFor_vSched.c, and the other
+is using OpenMP, called appFor_vSchedOpenMP.c.
+
+1. Pthreads example
+a. To compile the pthreads example, type:
+
+  make clean; make
+
+b. To run the pthreads example on Mac, you may need the pthBarrierOSX.c/pthBarrierOSX.h file, included in this directory.
+This is taken care of in the Makefile, as below:
+
+  make clean; make test_vSchedOnMac
 
 
-The code of this loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. 
+Also, include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
 
-For the general solution for MPI+OpenMP application programs, you need to link the vsched library with files from a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
-The library is in the repository on my github page named 'slack-trace'. 
+2. To run the OpenMP example:
 
----
+(to be added, but this is to note for now that this can also be done also using my library).
 
-# Notes for Installing and Using the Library 
-- Note that the compilerTuning should be part of the uSchedTransform
-
----
-
-# TODO:
-
-- Add more information about installing and using the library 
+Note: Currently, I've just left out the configure file, but I will work on getting the proper one when I have a bit more time(I believe the
+pthBarrierOSX.h should solve some of the problems). -VK 3/26/14

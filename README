@@ -1,7 +1,7 @@
 # Description 
 
 
-The code of my loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. 
+The code of this loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. 
 
 For the general solution for MPI+OpenMP application programs, you need to link the vsched library with files from a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
 The library is in the repository on my github page named 'slack-trace'. 

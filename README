@@ -1,10 +1,4 @@
-# Description 
-
-The code of this loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. See my dissertation by visiting my googlepages webpage https://vivek112.googlepages.com, clicking on the link Research at the top of the page, scrolling to the bottom of the page where you see a list of publications, and clicking on the publication titled
-'Low-overhead Scheduling to Improve Performance of Scientific Applications'.
- 
-For the general solution for MPI+OpenMP application programs, you need to link this library with a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
-The library is in the repository named 'slack-trace' on my github page at https://github.com/vivek224 .
+# Description
 
 This is the library for lightweight scheduling which includes a constraint for reduction of cache misses and locking overhead.
 
@@ -13,7 +7,12 @@ The vSched.c library contains the functions for initializing the scheduler, loop
 
 There are two example app code files included in this folder:  one is using pthreads, called appFor_vSched.c, and the other
 is using OpenMP, called appFor_vSchedOpenMP.c.
+ 
+For the general solution for MPI+OpenMP application programs, you need to link this library with a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
+The library is in the repository named 'slack-trace' on my github page at https://github.com/vivek224 .
 
+The code of this loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. See my dissertation by visiting my googlepages webpage https://vivek112.googlepages.com, clicking on the link Research at the top of the page, scrolling to the bottom of the page where you see a list of publications, and clicking on the publication titled
+'Low-overhead Scheduling to Improve Performance of Scientific Applications'.
 
 # Installing/configuring the library
 

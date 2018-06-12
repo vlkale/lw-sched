@@ -14,7 +14,7 @@ For the general solution for MPI+OpenMP application programs, you need to link t
 The library is in the repository named 'slack-trace' on my github page at https://github.com/vivek224 .
 
 The code of this loop scheduling library contains the key idea for the within-node solution proposed and studied in my dissertation. See my dissertation by visiting my googlepages webpage https://vivek112.googlepages.com, clicking on the link Research at the top of the page, scrolling to the bottom of the page where you see a list of publications, and clicking on the publication titled
-'Low-overhead Scheduling to Improve Performance of Scientific Applications'.
+'Low-overhead Scheduling to Improve Performance of Scientific Applications'. Other relevant papers can be found in that list by searching for the keyword 'low-overhead', 'locality-sensitive' or 'load balancing' in that list.
 
 # Installing/configuring the library
 

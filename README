@@ -1,6 +1,6 @@
 # Description
 
-The library that is built from the code files in this directory
+This library allows users of an OpenMP program to use different loop scheduling strategies than the provided loop schedules. The library that is built from the code files in this directory
 lets a user insert annotations for OpenMP loops in an application program to use one of the several efficient loop schedules provided in this library.
 The existing set of loop schedules in this library can be augmented through open-source code development.
 The schedules are intended to provides an effective tradeoff among factors including dynamic load imbalance, synchronization overhead and cache misses due to loss of locality.

@@ -42,7 +42,7 @@ Include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
 2. To run the OpenMP example:
 
 
-   set OMP_NUM_THREADS={number_of_cores_on_node} make clean; make test_vSched_OMP; 
+   export OMP_NUM_THREADS=${number_of_cores_on_node}; make clean; make test_vSched_OMP; 
    
 
    This can also be done also using my library.

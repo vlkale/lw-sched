@@ -1,6 +1,6 @@
 
 ---
-# Description 
+# Description of the Library
 
 This library allows users of an OpenMP program to use different loop scheduling strategies than the provided loop schedules. The library that is built from the code files in this directory
 lets a user insert annotations for OpenMP loops in an application program to use one of the several efficient loop schedules provided in this library.
@@ -23,7 +23,7 @@ The code of this loop scheduling library contains the key idea for the within-no
 
 ---
 
-# Installing/configuring the library
+# Installing and Configuring the Library
 
 The code doesn't have a configure file and I've just left out the configure file for now. I'm modifying the configure file to ensure its correctness before adding it to this open-source version. I intend to add it in the next month. I believe the
 pthBarrierOSX.h should work for any Mac OS version. If you'd like to run on a Mac, you'll be using the pthBarrierOSX.h file when running the code.

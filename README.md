@@ -29,11 +29,11 @@ pthBarrierOSX.h should work for any Mac OS version. If you'd like to run on a Ma
  
     a. To compile the pthreads example, type:
  
-      make clean; make
+       make clean; make
 
     b. To run the pthreads example on Mac, you may need the pthBarrierOSX.c file and the pthBarrierOSX.h file, included in this directory. This is taken care of in the Makefile, as below:
 
-      make clean; make test_vSchedOnMac; 
+       make clean; make test_vSchedOnMac; 
   
   
 Include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
@@ -42,7 +42,7 @@ Include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
 2. To run the OpenMP example:
 
 
-   export OMP_NUM_THREADS=${number_of_cores_on_node}; make clean; make test_vSched_OMP; 
+       export OMP_NUM_THREADS=${number_of_cores_on_node}; make clean; make test_vSched_OMP; 
    
 
    This can also be done also using my library.

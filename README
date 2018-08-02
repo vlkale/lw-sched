@@ -10,7 +10,7 @@ This is the library for lightweight scheduling which includes a constraint for r
 The vSched.c library contains the functions for initializing the scheduler, loop_start_<strat>, and the dequeueing functions
 (loop_next_<strat>), where <strat> is the particular strategy. The implementor can add other strategies, by looking at the example functions in vSched.c shown.
 
-There are two example app code files included in this folder:  one is using pthreads, called appFor_vSched.c, and the other
+There are two example app code files included in this folder: one is using pthreads, called appFor_vSched.c, and the other
 is using OpenMP, called appFor_vSchedOpenMP.c.
  
 For the general solution for MPI+OpenMP application programs, you need to link this library with a library that predicts MPI communication time for an upcoming collective call or MPI_Isend/ MPI_Irecv / MPI_Waitall during execution of an application program.
@@ -44,6 +44,6 @@ Include the pthBarrierforOSX.h in the appFor_vSchedSimple.c file.
 
 set OMP_NUM_THREADS={number_of_cores_on_node} make clean; make test_vSched_OMP; 
 
-This can also be done also using my library.
+This can also be done using my library.
 
 

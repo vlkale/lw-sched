@@ -84,10 +84,8 @@ int endInd = (probSize*(threadNum+1))/numThreads;
     if(threadNum == 0)
       iter++;
     pthread_barrier_wait(&myBarrier);
-  } // end timestep loop
+  }
 }
-
-// TODO : barrier
 
 int main(int argc, char* argv[])
 {
@@ -107,15 +105,10 @@ int main(int argc, char* argv[])
     probSize = atoi(argv[1]);
     numThreads = atoi(argv[2]);
   }
-
-  if(argc > 3)
-    static_fraction = atof(argv[3]);
-  if(argc > 4)
-    constraint = atof(argv[4]);
-  if(argc > 5)
-    numIters = atoi(argv[5]);
-  if(argc > 6)
-    chunk_size = atoi(argv[6]);
+  if(argc > 3) static_fraction = atof(argv[3]);
+  if(argc > 4) constraint = atof(argv[4]);
+  if(argc > 5) numIters = atoi(argv[5]);
+  if(argc > 6) chunk_size = atoi(argv[6]);
 
   printf("starting pthreads application.  threads = %d \t probSize = %d \t numIters = %d \n", numThreads, probSize, numIters);
   pthread_attr_init(&attr);

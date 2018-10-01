@@ -1,13 +1,9 @@
-
-
-
 extern void vSched_init(int);
 extern void vSched_finalize(int);
 extern double vSched_get_wtime();
 extern double nont_vSched_get_wtime();
 
-
-// TODO: figure out whether below should be extern'd
+// TODO: figure out whethe the functions below should in fact be extern'd
 extern int loop_start_static(int loopBegin, int loopEnd, int *pstart, int *pend, int threadID, int numThreads);
 extern int loop_next_static(int *pstart, int *pend);
 

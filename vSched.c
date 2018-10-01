@@ -1,17 +1,18 @@
 #include <pthread.h>
 
-//flag used for debugging output
+//flag used for debugging output - uncomment the line below if you want verbose debugging.
 //#define VERBOSE
 
 #define PROFILING
 
-#include <stdio.h> // use this for testing
+#include <stdio.h> 
+// use this for testing
 pthread_mutex_t sched_lock;
 
 #include <cstdlib>
 #include <sys/time.h>
 #include <sys/resource.h>
-// could declare below as static
+// NOTE: one could declare the variable in line below as static so that we maintain state over loop iterations. 
 float f_s;
 float f_d;
 float constraint_;
@@ -23,10 +24,9 @@ int isLoopStarted;
 int count ;
 int threadCount;
 
-// functions internal to the vSched library
+// functions internal to this library
 int get_constraint();
 double vSched_get_wtime();
-
 
 typedef struct PossibleWork  // coem up with a better name
 {
@@ -60,56 +60,12 @@ void vSched_finalize(int numThreads)
   pthread_mutex_destroy(&sched_lock);
 }
 
-//int loop_start_static(int loopBegin, int loopEnd, int *pstart, int *pend, int threadID, int numThreads)
-//{
-// *pstart = loopBegin + ((loopEnd - loopBegin)*threadID)/numThreads; /* figure out algebra  here , based on loopBegin */
-// *pend = loopBegin + ((loopEnd - loopBegin)*(threadID+1))/numThreads; /* figure out algebra  here , based on loopBegin ;  check */
-// return 1;
-//}
-
-
-//int loop_next_static(int *pstart, int *pend)
-//{
-// return 0;
-//}
-
 void setStaticFraction(float f, int _chunkSize)
 {
   f_s = f;
   chunkSize = _chunkSize;
   isLoopStarted = 0;
 }
-
-//int loop_start_static_fraction(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads)
-//{
-// pthread_mutex_lock(&sched_lock);
-// if(!isLoopStarted)
-// {
-//   loopEnd = _loopEnd;
-//   nextChunk = loopBegin + (loopEnd - loopBegin)*f_s;
-//   isLoopStarted = 1;
-// }
-// pthread_mutex_unlock(&sched_lock);
-//  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID)*f_s)/numThreads; /* figure out algebra  here , based on loopBegin */
-// *pend = loopBegin + (((loopEnd - loopBegin)*(threadID+1))*f_s)/numThreads; /* figure out algebra  here , based on loopBegin, check */
-//return 1;
-// }
-
-// int loop_next_static_fraction(int *pstart, int *pend)
-// {
-// if(nextChunk  >=  loopEnd )
-// {
-//  isLoopStarted = 0;  /* protect with lock, or make only thread 0 do it */
-    /* might be good place to do tasklet locality here */
-//    return 0;
-// }
-// *pstart = nextChunk;
-// nextChunk = nextChunk + chunkSize;
-// *pend  = nextChunk;
-//  if(*pend  > loopEnd)
-//   *pend = loopEnd;
-// return 1;
-//}
 
 void setCDY(float f, double c, int _chunkSize)
 {
@@ -193,12 +149,10 @@ int loop_next_cdy(int *pstart, int *pend, int tid)
 #endif
   if(*pend  > loopEnd)
     *pend = loopEnd;
-
 #ifdef PROFILING
   time_loop_next += vSched_get_wtime();
   printf("loop_next_sds(): thread %d \t dequeue time = %f  \n" ,tid, time_loop_next);
 #endif
-
   return 1;
 }
 
@@ -223,7 +177,7 @@ int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *p
     count--;
     pthread_mutex_unlock(&sched_lock);
   }
-// print ostart pend
+// print ostart and pend for VERBOSE debugging.
 #ifdef VERBOSE
     printf("thread%d:\t pstart =  %d \t pend = %d \t nextChunk = %d \n ", threadID, *pstart, *pend, dynwork[threadID]->nextChunk);
 #endif
@@ -241,7 +195,7 @@ int selectAnotherThread(int tid, int numThreads)
     printf("given threadID %d \t thd to steal from is %d \n", tid, another_tid);
 #endif
 
-//for  now we choose the next tid
+// For now we choose the next tid
 //  another_tid = (tid + 1)%numThreads;
   another_tid = (tid + 1)%numThreads ; // hardcode to 16 for now
 // Strategy 1: randomized stealing
@@ -258,7 +212,6 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
   double time_loop_next = 0.0;
   time_loop_next = - vSched_get_wtime();
 #endif
-
   int t_x  = -1;
   if (count == 0) return 0;
   pthread_mutex_lock(&(dynwork[tid]->qLock));
@@ -278,7 +231,6 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
       count--;
       pthread_mutex_unlock(&sched_lock);
     }
-
 #ifdef PROFILING
       time_loop_next += vSched_get_wtime();
       printf("loop_next_sds(): thread %d \t time = %f  \n" , tid, time_loop_next);
@@ -287,14 +239,11 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
   }
   else // we steal from another thread
   {
-//    printf("[%d]: loop_next, steal: count=%d\n", tid,count);
     pthread_mutex_unlock(&(dynwork[tid]->qLock));
     if(count == 0) return 0;
     t_x = selectAnotherThread(tid, threadCount);
     if (t_x == -1) // we couldn't steal from another thread, as no other thread has work
-    {
       return 0;
-    }
     else // there is work from another thread to be stolen
     {
       if(count == 0) return 0;
@@ -325,7 +274,6 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
 int get_constraint()
 {
   double rand_val = (double)rand()/(double)RAND_MAX;
-
   if(rand_val < 0.0 || rand_val > 1.0)
     return -1;
   #ifdef VERBOSE
@@ -338,8 +286,7 @@ int get_constraint()
     return 0;
 }
 
-
-// TODO :  figure this out for both threaded and non-threaded regions
+// TODO: make the function vSched_get_wtime work for both threaded computation regions and serial computation regions.
 
 double vSched_get_wtime(void)
 {
@@ -352,21 +299,17 @@ double vSched_get_wtime(void)
 #else
   getrusage(RUSAGE_CHILDREN, &ruse);
 #endif
-
 #ifdef VERBOSE
     printf("vSched_get_wtime(): \n") ;
 #endif
-
   return( (double)(ruse.ru_utime.tv_sec+ruse.ru_utime.tv_usec / 1000000.0) );
 }
-
 
 double nont_vSched_get_wtime(void)
 {
   struct rusage ruse;
 getrusage(RUSAGE_SELF, &ruse);
 // see documentation , need to use rusage thread for proper timing
-
 #ifdef VERBOSE
     printf("vSched_get_wtime(): \n") ;
 #endif

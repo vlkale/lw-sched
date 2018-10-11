@@ -63,7 +63,7 @@ int endInd = (probSize*(threadNum+1))/numThreads;
     pthread_barrier_wait(&myBarrier);
     // FORALL_BEGIN(cdy, 0, probSize, startInd, endInd, threadNum, numThreads)
 
-#pragma omp parallel
+// #pragma omp parallel
      FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
      if(VERBOSE) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
 /* get thread num and numThreads from functions */

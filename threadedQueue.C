@@ -16,10 +16,10 @@ pthread_mutex_t sched_lock;
 float f_s;
 float f_d;
 float constraint_;
-int chunkSize;
-int nextChunk;
-int loopEnd;
-int isLoopStarted;
+int taskSize;
+int nextTask;
+int taskNumEnd;
+int isTaskStarted;
 int count;
 int threadCount;
 
@@ -61,105 +61,6 @@ void vSched_finalize(int numThreads)
   pthread_mutex_destroy(&sched_lock);
 }
 
-void setStaticFraction(float f, int _chunkSize)
-{
-  f_s = f;
-  chunkSize = _chunkSize;
-  isLoopStarted = 0;
-}
-
-void setCDY(float f, double c, int _chunkSize)
-{
-  f_s = f; f_d = 1.0 - f; constraint_ = c; chunkSize = _chunkSize; isLoopStarted = 0;
-}
-
-/*
-  this is the initialization function for the constrained dynamic scheduling
-*/
-int loop_start_cdy(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
-{
-  pthread_mutex_lock(&sched_lock);
-// printf("loop_start_cdy(): thread %d \n", threadID);
-  if(!isLoopStarted)
-  {
-    loopEnd = _loopEnd;
-    nextChunk = loopBegin + (loopEnd - loopBegin)*f_s;
-    isLoopStarted = 1;
-    #ifdef VERBOSE
-      printf("loop_start_cdy(): thread %d : isLoopStarted = %d \t nextChunk = %d \t loopEnd = %d \n", threadID, isLoopStarted, nextChunk, loopEnd);
-      #endif
-  } 
-  pthread_mutex_unlock(&sched_lock);
-  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID)*f_s)/numThreads; /* figure out algebra here, based on loopBegin */
-  *pend = loopBegin + (((loopEnd - loopBegin)*(threadID+1))*f_s)/numThreads; /* figure out algebra here, based on loopBegin, check */
-// print ostart pend
-#ifdef VERBOSE
-    printf("thread%d:\t pstart =  %d \t pend = %d \t nextChunk = %d \n ", threadID, *pstart, *pend, nextChunk);
-#endif
- return 1;
-}
-
-/*
-  return 0 means that there is no more work
-*/
-
-int loop_next_cdy(int *pstart, int *pend, int tid)
-{
-#ifdef VERBOSE
-  printf("starting loop_next_cdy() \t pstart %d \t pend %d \n", *pstart, *pend);
-#endif
-  if(isLoopStarted == 0)
-    return 0;
-
-#ifdef PROFILING
-  double time_loop_next = 0.0;
-  time_loop_next = - vSched_get_wtime();
-#endif
-  pthread_mutex_lock(&sched_lock);
-  if((nextChunk  >=  loopEnd)  && (isLoopStarted == 1)) // if next chunk greater than end bound, and no one else noticed
-  {
-    isLoopStarted = 0;  /* protect with lock, or make only thread 0 do it */
-    /* might be good place to do tasklet locality here */
-#ifdef VERBOSE
-    printf("loop ended\n");
-#endif
-
-#ifdef PROFILING
-    time_loop_next += vSched_get_wtime();
-    printf("loop_next_sds(): loop ended: thread %d \t dequeue time = %f  \n" , tid, time_loop_next);
-#endif
-    pthread_mutex_unlock(&sched_lock);
-    return 0;
-  }
-
-  if(get_constraint())
-  {
-    *pstart = nextChunk;
-    nextChunk = nextChunk + chunkSize;
-    *pend  = nextChunk;
-  }
-  else // the constraint is not satisfied, so we make the thread do a dummy piece of work
-  {
-#ifdef VERBOSE
-    printf("condition not passed. Thread working on dummy tasklet, and then dequeueing again.\n");
-#endif
-    *pstart = 0;  // this should generate bus traffic, it's only hitting registers
-    *pend = 0;
-  }
-  pthread_mutex_unlock(&sched_lock);
-#ifdef VERBOSE
-    printf(" Loop_next_cdy(): \t pstart =  %d \t pend = %d \t nextChunk = %d \n ", *pstart, *pend, nextChunk);
-#endif
-  if(*pend  > loopEnd)
-    *pend = loopEnd;
-#ifdef PROFILING
-  time_loop_next += vSched_get_wtime();
-  printf("loop_next_sds(): thread %d \t dequeue time = %f  \n" ,tid, time_loop_next);
-#endif
-  return 1;
-}
-
-
 int enqueue(int taskNumBegin, int _taskNumEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
 {
   pthread_mutex_lock(&sched_lock); // check if the lock is needed around the whole conditional clause
@@ -170,23 +71,19 @@ int enqueue(int taskNumBegin, int _taskNumEnd, int *pstart, int *pend, int threa
   // printf("loop_start_cdy(): thread %d \n", threadID);
   // loopEnd = _loopEnd;
   taskNumLast = _taskNumEnd;
-
   // The following code distributes the endpoint of each thread's queue. 
   my_t_queue[threadID]->limit = taskNumBegin + ((numTasks)*(threadID+1))/numThreads; // the limit is the begin point of the threadID + 1.  
   *pstart = taskNumBegin + (numTasks*threadID)/numThreads; /* figure out algebra here, based on taskBegin */
   *pend = *pstart + numTasks/numThreads; /* figure out algebra here, based on taskBegin */
-
   my_t_queue[threadID]->nextTask = *pend;
   my_t_queue[threadID]->chunkSize = chunkSize;
   pthread_mutex_unlock(&(my_t_queue[threadID]->qLock));
-
   if (my_t_queue[threadID]->nextTask >= my_t_queue[threadID]->limit) // this thread is done with its own queue
   {
     pthread_mutex_lock(&sched_lock);
     count--;
     pthread_mutex_unlock(&sched_lock);
   }
-
 // print pstart and pend for VERBOSE debugging.
 #ifdef VERBOSE
     printf("thread%d:\t pstart =  %d \t pend = %d \t nextTask = %d \n ", threadID, *pstart, *pend, my_t_queue[threadID]->nextTask);
@@ -229,7 +126,7 @@ int dequeue(int *pstart, int *pend, int tid)
   if(my_t_queue[tid]->nextTask < my_t_queue[tid]->limit) // the thread still has work to be done in its own queue
   {
     #ifdef VERBOSE
-    printf("loop_next_sds(): thread %d . There is work in the local queue. nextChunk = %d \t limit = %d \n", tid, nextTask, my_t_queue[tid]->limit);
+    printf("task_next_sds(): thread %d . There are tasks in the local queue. nextTask = %d \t limit = %d \n", tid, nextTask, my_t_queue[tid]->limit);
       #endif
     *pstart = my_t_queue[tid]->nextTask;
     my_t_queue[tid]->nextTask = my_t_queue[tid]->nextTask;

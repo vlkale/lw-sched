@@ -1,10 +1,10 @@
 #include <pthread.h>
+using namespace std;
 
 //flag used for debugging output - uncomment the line below if you want verbose debugging.
 //#define VERBOSE
 
 #define PROFILING
-
 #include <stdio.h> 
 // use this for testing
 pthread_mutex_t sched_lock;
@@ -20,7 +20,6 @@ int chunkSize;
 int nextChunk;
 int loopEnd;
 int isLoopStarted;
-
 int count;
 int threadCount;
 
@@ -28,17 +27,7 @@ int threadCount;
 int get_constraint();
 double vSched_get_wtime();
 
-typedef struct PossibleWork  // coem up with a better name
-{
-  int nextChunk;
-  int chunkSize;
-  int limit; //this is the iteration that we should not assign.
-  pthread_mutex_t qLock;
-} PossibleWork ;
-
-PossibleWork** dynwork;
-
-typedef struct ThreadedQueue // coem up with a better name
+typedef struct ThreadedQueue // come up with a better name
 {
   int nextChunk;
   int chunkSize;
@@ -46,7 +35,7 @@ typedef struct ThreadedQueue // coem up with a better name
   pthread_mutex_t qLock;
 } ThreadedQueue;
 
-ThreadedQueue** threaded_queue;
+ThreadedQueue** my_t_queue;
 
 int selectAnotherThread(int tid, int numThreads);
 
@@ -59,26 +48,13 @@ void vSched_init(int numThreads)
 {
   pthread_mutex_init(&sched_lock, NULL);
   threadCount = numThreads;
-  dynwork = (PossibleWork**) malloc(sizeof(void*)*numThreads);
+  my_t_queue = (PossibleWork**) malloc(sizeof(void*)*numThreads);
   for (int i = 0 ; i < numThreads; i++)
     {
-      dynwork[i] = (PossibleWork*) malloc(sizeof(PossibleWork));
-      pthread_mutex_init(&(dynwork[i]->qLock), NULL);
+      my_t_queue[i] = (PossibleWork*) malloc(sizeof(PossibleWork));
+      pthread_mutex_init(&(my_t_queue[i]->qLock), NULL);
     }
 }
-
-void vSched_init(int numThreads)
-{
-  pthread_mutex_init(&sched_lock, NULL);
-  threadCount = numThreads;
-  dynwork = (PossibleWork**) malloc(sizeof(void*)*numThreads);
-  for (int i = 0; i < numThreads; i++)
-    {
-      dynwork[i] = (PossibleWork*) malloc(sizeof(PossibleWork));
-      pthread_mutex_init(&(dynwork[i]->qLock), NULL);
-    }
-}
-
 
 void vSched_finalize(int numThreads)
 {
@@ -112,10 +88,10 @@ int loop_start_cdy(int loopBegin, int _loopEnd, int *pstart, int *pend, int thre
     #ifdef VERBOSE
       printf("loop_start_cdy(): thread %d : isLoopStarted = %d \t nextChunk = %d \t loopEnd = %d \n", threadID, isLoopStarted, nextChunk, loopEnd);
       #endif
-  }
+  } 
   pthread_mutex_unlock(&sched_lock);
-  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID)*f_s)/numThreads; /* figure out algebra  here , based on loopBegin */
-  *pend = loopBegin + (((loopEnd - loopBegin)*(threadID+1))*f_s)/numThreads; /* figure out algebra  here , based on loopBegin, check */
+  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID)*f_s)/numThreads; /* figure out algebra here, based on loopBegin */
+  *pend = loopBegin + (((loopEnd - loopBegin)*(threadID+1))*f_s)/numThreads; /* figure out algebra here, based on loopBegin, check */
 // print ostart pend
 #ifdef VERBOSE
     printf("thread%d:\t pstart =  %d \t pend = %d \t nextChunk = %d \n ", threadID, *pstart, *pend, nextChunk);
@@ -126,6 +102,7 @@ int loop_start_cdy(int loopBegin, int _loopEnd, int *pstart, int *pend, int thre
 /*
   return 0 means that there is no more work
 */
+
 int loop_next_cdy(int *pstart, int *pend, int tid)
 {
 #ifdef VERBOSE
@@ -154,6 +131,7 @@ int loop_next_cdy(int *pstart, int *pend, int tid)
     pthread_mutex_unlock(&sched_lock);
     return 0;
   }
+
   if(get_constraint())
   {
     *pstart = nextChunk;
@@ -181,30 +159,37 @@ int loop_next_cdy(int *pstart, int *pend, int tid)
   return 1;
 }
 
-int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
+
+int enqueue(int taskNumBegin, int _taskNumEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
 {
   pthread_mutex_lock(&sched_lock); // check if the lock is needed around the whole conditional clause
   if(count == 0)
     count = numThreads;
   pthread_mutex_unlock(&sched_lock);
-  pthread_mutex_lock(&dynwork[threadID]->qLock);
-// printf("loop_start_cdy(): thread %d \n", threadID);
-  loopEnd = _loopEnd;
-  dynwork[threadID]->limit = loopBegin + ((loopEnd - loopBegin)*(threadID+1))/numThreads;
-  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID))/numThreads; /* figure out algebra  here , based on loopBegin */
-  *pend = *pstart + ((loopEnd - loopBegin)*f_s)/numThreads; /* figure out algebra  here , based on loopBegin, check */
-  dynwork[threadID]->nextChunk = *pend;
-  dynwork[threadID]->chunkSize = chunkSize;
-  pthread_mutex_unlock(&(dynwork[threadID]->qLock));
-  if (dynwork[threadID]->nextChunk >= dynwork[threadID]->limit) // this thread is done with its own queue
+  pthread_mutex_lock(&my_t_queue[threadID]->qLock);
+  // printf("loop_start_cdy(): thread %d \n", threadID);
+  // loopEnd = _loopEnd;
+  taskNumLast = _taskNumEnd;
+
+  // The following code distributes the endpoint of each thread's queue. 
+  my_t_queue[threadID]->limit = taskNumBegin + ((numTasks)*(threadID+1))/numThreads; // the limit is the begin point of the threadID + 1.  
+  *pstart = taskNumBegin + (numTasks*threadID)/numThreads; /* figure out algebra here, based on taskBegin */
+  *pend = *pstart + numTasks/numThreads; /* figure out algebra here, based on taskBegin */
+
+  my_t_queue[threadID]->nextTask = *pend;
+  my_t_queue[threadID]->chunkSize = chunkSize;
+  pthread_mutex_unlock(&(my_t_queue[threadID]->qLock));
+
+  if (my_t_queue[threadID]->nextTask >= my_t_queue[threadID]->limit) // this thread is done with its own queue
   {
     pthread_mutex_lock(&sched_lock);
     count--;
     pthread_mutex_unlock(&sched_lock);
   }
-// print ostart and pend for VERBOSE debugging.
+
+// print pstart and pend for VERBOSE debugging.
 #ifdef VERBOSE
-    printf("thread%d:\t pstart =  %d \t pend = %d \t nextChunk = %d \n ", threadID, *pstart, *pend, dynwork[threadID]->nextChunk);
+    printf("thread%d:\t pstart =  %d \t pend = %d \t nextTask = %d \n ", threadID, *pstart, *pend, my_t_queue[threadID]->nextTask);
 #endif
   return 1;
 }
@@ -212,6 +197,7 @@ int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *p
 /*
 - This function chooses another thread to steal from, based on the threadId it is given.
 */
+
 int selectAnotherThread(int tid, int numThreads)
 {
   return 0;
@@ -219,7 +205,6 @@ int selectAnotherThread(int tid, int numThreads)
   #ifdef VERBOSE
     printf("given threadID %d \t thd to steal from is %d \n", tid, another_tid);
 #endif
-
 // For now we choose the next tid
 //  another_tid = (tid + 1)%numThreads;
   another_tid = (tid + 1)%numThreads ; // hardcode to 16 for now
@@ -228,10 +213,11 @@ int selectAnotherThread(int tid, int numThreads)
   return another_tid;
 }
 
+
 /*
-This is the staggered method for mixed static/dynamic scheduling .
+This is the staggered method for mixed static/dynamic scheduling.
 */
-int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
+int dequeue(int *pstart, int *pend, int tid)
 {
 #ifdef PROFILING
   double time_loop_next = 0.0;
@@ -239,18 +225,18 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
 #endif
   int t_x  = -1;
   if (count == 0) return 0;
-  pthread_mutex_lock(&(dynwork[tid]->qLock));
-  if(dynwork[tid]->nextChunk < dynwork[tid]->limit) // the thread still has work to be done in its own queue
+  pthread_mutex_lock(&(my_t_queue[tid]->qLock));
+  if(my_t_queue[tid]->nextTask < my_t_queue[tid]->limit) // the thread still has work to be done in its own queue
   {
     #ifdef VERBOSE
-    printf("loop_next_sds(): thread %d . There is work in the local queue. nextChunk = %d \t limit = %d \n", tid, nextChunk, dynwork[tid]->limit);
+    printf("loop_next_sds(): thread %d . There is work in the local queue. nextChunk = %d \t limit = %d \n", tid, nextTask, my_t_queue[tid]->limit);
       #endif
-    *pstart = dynwork[tid]->nextChunk;
-    dynwork[tid]->nextChunk = dynwork[tid]->nextChunk + dynwork[tid]->chunkSize;
-    if(dynwork[tid]->nextChunk > dynwork[tid]->limit) dynwork[tid]->nextChunk = dynwork[tid]->limit;
-    *pend  = dynwork[tid]->nextChunk;
-    pthread_mutex_unlock(&(dynwork[tid]->qLock));
-    if(dynwork[tid]->nextChunk >= dynwork[tid]->limit) // this thread is done with its own queue
+    *pstart = my_t_queue[tid]->nextTask;
+    my_t_queue[tid]->nextTask = my_t_queue[tid]->nextTask;
+    if(my_t_queue[tid]->nextTask > my_t_queue[tid]->limit) my_t_queue[tid]->nextTask = my_t_queue[tid]->limit;
+    *pend  = my_t_queue[tid]->nextTask;
+    pthread_mutex_unlock(&(my_t_queue[tid]->qLock));
+    if(my_t_queue[tid]->nextTask >= my_t_queue[tid]->limit) // this thread is done with its own queue
     {
       pthread_mutex_lock(&sched_lock);
       count--;
@@ -264,7 +250,7 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
   }
   else // we steal from another thread
     {
-      pthread_mutex_unlock(&(dynwork[tid]->qLock));
+      pthread_mutex_unlock(&(my_t_queue[tid]->qLock));
       if(count == 0) return 0;
       t_x = selectAnotherThread(tid, threadCount);
       if (t_x == -1) // we couldn't steal from another thread, as no other thread has work
@@ -272,16 +258,16 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
       else // there is work from another thread to be stolen
 	{
 	  if(count == 0) return 0;
-	  pthread_mutex_lock(&(dynwork[t_x]->qLock));
+	  pthread_mutex_lock(&(my_t_queue[t_x]->qLock));
 #ifdef VERBOSE
 	  printf("loop_next_sds(): thread %d \t There is work from another thread to be stolen\n", tid);
 #endif
-	  *pstart = dynwork[t_x]->nextChunk;
-	  if (*pstart >= dynwork[t_x]->limit ) {      pthread_mutex_unlock(&(dynwork[t_x]->qLock)); return 0; }
-	  dynwork[t_x]->nextChunk = dynwork[t_x]->nextChunk + dynwork[t_x]->chunkSize;
-	  *pend = dynwork[t_x]->nextChunk;
-	  if(*pend > dynwork[t_x]->limit) *pend = dynwork[t_x]->limit;
-	  pthread_mutex_unlock(&(dynwork[t_x]->qLock));
+	  *pstart = my_t_queue[t_x]->nextTask;
+	  if (*pstart >= my_t_queue[t_x]->limit ) { pthread_mutex_unlock(&(my_t_queue[t_x]->qLock)); return 0; }
+	  //  my_t_queue[t_x]->nextTask = my_t_queue[t_x]->nextTask + my_t_queue[t_x]->chunkSize;
+	  *pend = my_t_queue[t_x]->nextTask;
+	  if(*pend > my_t_queue[t_x]->limit) *pend = my_t_queue[t_x]->limit;
+	  pthread_mutex_unlock(&(my_t_queue[t_x]->qLock));
 	  return 1;
 	}
     } // end condition for stealing

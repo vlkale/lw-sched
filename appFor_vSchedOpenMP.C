@@ -110,7 +110,8 @@ int main(int argc, char* argv[])
   vSched_init(numThreads);
   a = (float*)malloc(sizeof(float)*probSize);
   b = (float*)malloc(sizeof(float)*probSize);
-  
+	
+  // initialize input vectors, use standard worksharing here. 
   #pragma omp parallel for
   for (int i = 0 ; i < probSize ; i++)
   {

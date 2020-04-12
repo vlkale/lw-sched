@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
   
   printf("totalTime: %f \n", totalTime);
 
-  myfile = fopen("outFileVecSum.dat","a+");
+  myfile = fopen("outFilePerf.dat","a+");
   fprintf(myfile, "\t%d\t%d\t%f\t%f\n", numThreads, probSize, static_fraction, totalTime);
   fclose(myfile);
 	

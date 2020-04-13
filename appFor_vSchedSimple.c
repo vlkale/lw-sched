@@ -14,7 +14,7 @@ pthread_mutex_t myLock;
 pthread_attr_t attr;
 
 /* -- Debugging -- */
-#define VERBOSE 1
+// #define VERBOSE 1
 
 /* --  Performance Measurement -- */
 double totalTime = 0.0;
@@ -63,21 +63,28 @@ int endInd = (probSize*(threadNum+1))/numThreads;
     if(threadNum == 0) setCDY(static_fraction, constraint, chunk_size); // set constraint parameter of scheduling strategy
     pthread_barrier_wait(&myBarrier);
     FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
-    if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+#ifdef VERBOSE
+      if(VERBOSE==1)
+	printf("[%ld] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+#endif
     for (i = startInd; i < endInd; i++)
       {
 	mySum += a[i]*b[i];
         //mySum += (sqrt(a[i])*sqrt(b[i])) / 4.0; // Uncomment this line and comment the line above this one if you'd like to increase the floating point operations per outer iteration done by the program.
       }
     FORALL_END(statdynstaggered, startInd, endInd, threadNum)
-    if(VERBOSE == 1) printf("[%d] out of iter\n", threadNum);
+ #ifdef VERBOSE
+      if(VERBOSE==1)
+      printf("[%ld] out of iter\n", threadNum);
+ #endif 
     pthread_mutex_lock(&myLock);
-    sum += mySum;
+    sum += mySum; // Note: could create support for reduction in vSched library. Don't do that at the moment. 
     pthread_mutex_unlock(&myLock);
     pthread_barrier_wait(&myBarrier);
     if(threadNum == 0) iter++;
     pthread_barrier_wait(&myBarrier);
   }
+ return 0;
 }
 
 int main(int argc, char* argv[])
@@ -91,17 +98,19 @@ int main(int argc, char* argv[])
   numThreads = NUMTHREADS;
   probSize = PROBSIZE;
   numIters = MAX_ITER;
-  if(argc < 3)
-    printf("usage: appName [probSize] [numThreads] (static_fraction) (constraint) (numIters) \n");
-  else if(argc > 2)
+  if(argc < 4)
+    printf("usage: appName [probSize] [numIters] [numThreads] (chunksize) (static_fraction) (constraint) \n");
+  else
   {
     probSize = atoi(argv[1]);
-    numThreads = atoi(argv[2]);
+    numIters = atoi(argv[2]);  
+    numThreads = atoi(argv[3]);
   }
-  if(argc > 3) static_fraction = atof(argv[3]);
-  if(argc > 4) constraint = atof(argv[4]);
-  if(argc > 5) numIters = atoi(argv[5]);
-  if(argc > 6) chunk_size = atoi(argv[6]);
+
+  if(argc > 3) chunk_size = atoi(argv[4]);
+  if(argc > 4) static_fraction = atof(argv[5]);
+  if(argc > 5) constraint = atof(argv[6]);
+  
 
   printf("starting pthreads application.  threads = %d \t probSize = %d \t numIters = %d \n", numThreads, probSize, numIters);
   pthread_attr_init(&attr);
@@ -131,8 +140,8 @@ int main(int argc, char* argv[])
   myfile = fopen("outFilePerf.dat","a+");
   fprintf(myfile, "\t%d\t%d\t%f\t%f\n", numThreads, probSize, static_fraction, totalTime);
   fclose(myfile);
-	
-  printf("Completed the program vecSum. The solution is: %f \n", sum);
+  
+  printf("Completed the program vecSum using vSched. The solution is: %f \n", sum);
 
   pthread_barrier_destroy(&myBarrier);
   pthread_mutex_destroy(&myLock);

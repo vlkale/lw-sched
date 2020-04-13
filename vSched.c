@@ -256,7 +256,9 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
     }
 #ifdef PROFILING
     time_loop_next += vSched_get_wtime();
+    #ifdef VERBOSE
     printf("loop_next_sds(): thread %d \t time = %f  \n" , tid, time_loop_next);
+    #endif
 #endif
     return 1;
   }

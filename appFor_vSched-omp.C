@@ -5,6 +5,7 @@
 
 /* -- library for parallelization of code -- */
 // #include <pthread.h>
+
 #include <omp.h>
 
 /* variables to support parallelization of code */
@@ -115,7 +116,11 @@ int main(int argc, char* argv[])
   {
     a[i] = i*1.0;
     b[i] = 1.0;
-  } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2 
+    int myTid = omp_get_thread_num();
+    printf("tid in init = %d", myTid);
+  } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2
+
+
  
   totalTime = -nont_vSched_get_wtime(); 
   dotProdFunc(NULL);

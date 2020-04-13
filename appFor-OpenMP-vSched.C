@@ -129,7 +129,7 @@ while(iter < numIters) // timestep loop
   fprintf(myfile, "\t%d\t%d\t%f\t%f\n", numThreads, probSize, static_fraction, totalTime);
   fclose(myfile);
 	
-  printf("Completed the program vecSum. The solution is: %f \n", sum);
+  printf("Completed the program vecSum tested with vSched. The solution is sum = %f\n", sum);
 
   vSched_finalize(numThreads);
 }

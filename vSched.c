@@ -61,18 +61,8 @@ int selectAnotherThread(int tid, int numThreads);
 int vSched_thread_init()
 { 
   // allocate the data structure for each thread
-}
 
-void vSched_init(int numThreads)
-{
-  pthread_mutex_init(&sched_lock, NULL);
-  threadCount = numThreads;
-  dynwork = (PossibleWork**) malloc(sizeof(void*)*numThreads);
-  for (int i = 0 ; i < numThreads; i++)
-    {
-      dynwork[i] = (PossibleWork*) malloc(sizeof(PossibleWork));
-      pthread_mutex_init(&(dynwork[i]->qLock), NULL);
-    }
+  return 0;
 }
 
 void vSched_init(int numThreads)

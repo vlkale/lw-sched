@@ -17,8 +17,5 @@ extern int loop_start_cdy(int loopBegin, int _loopEnd, int *pstart, int *pend, i
  extern int loop_next_cdy(int *pstart, int *pend);
 // extern int loop_next_cdy(int *pstart, int *pend, double constraint_val);
 
-extern int loop_start_cdy(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads);
-extern int loop_next_cdy(int *pstart, int *pend, int tid);
-
 extern int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads);
 extern int loop_next_statdynstaggered(int *pstart, int *pend, int tid);

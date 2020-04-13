@@ -81,6 +81,7 @@ while(iter < numIters) // timestep, or outer iteration, loop
     } // end omp paralllel
      iter++;
   } // end timestep loop 
+
 } // end dotProdFunc
 
 int main(int argc, char* argv[])

@@ -4,14 +4,13 @@
 #include <math.h>
 
 /* -- library for parallelization of code -- */
-#include <pthread.h>
+// #include <pthread.h>
+#include <omp.h>
+
+/* variables to support parallelization of code */
 #define NUMTHREADS 16 // default constant and set value for the number of threads
 int numThreads;
-pthread_t callThread[NUMTHREADS];
-pthread_barrier_t myBarrier;
-pthread_mutex_t timerLock;
-pthread_mutex_t myLock;
-pthread_attr_t attr;
+
 
 /* -- Debugging -- */
 #define VERBOSE 1
@@ -47,6 +46,7 @@ int iter = 0;
 float* a;
 float* b;
 
+// function testing the scheduler vSched
 void dotProdFunc(void* arg)
 {
 /* Test correctness, and test threads */
@@ -58,7 +58,7 @@ void dotProdFunc(void* arg)
 int startInd;
 int endInd;
 
-while(iter < numIters) // timestep loop
+while(iter < numIters) // timestep, or outer iteration, loop
   {
     mySum = 0.0;
    sum = 0.0;
@@ -67,28 +67,25 @@ while(iter < numIters) // timestep loop
    {
    threadNum = omp_get_thread_num();
    numThreads = omp_get_num_threads();
+   // The first parameter is the loop scheduling strategy.
    FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
    if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
     for (i = startInd; i < endInd; i++)
       {
-        	mySum += a[i]*b[i];
-         //mySum += (sqrt(a[i])*sqrt(b[i])) / 4.0; // Uncomment this line and comment the line above this one if you'd like to increase the floating point operations per outer iteration done by the program.
+          mySum += a[i]*b[i];
       }
     FORALL_END(statdynstaggered, startInd, endInd, threadNum)
     if(VERBOSE == 1) printf("[%d] out of iter\n", threadNum);
-    #pragma omp critical 
-      sum += mySum; // the vSched library can support reductions too, but better would be too just have user-defined schedules. Kept like this to make an illustrative point about this software design tradeoff.
-    }
+    #pragma omp critical
+      sum += mySum; // the vSched library could support reductions too. However, better would be to just use user-defined schedules being proposed for OpenMP and then use OpenMP's reductions. Code is kept like this to make an illustrative point about this software design tradeoff.
+    } // end omp paralllel
      iter++;
-  }
+  } // end timestep loop 
 } // end dotProdFunc
 
 int main(int argc, char* argv[])
 {
-  int rcThread;
   long i;
-  void *status;
-  pthread_attr_t attr;
   double totalTime = 0.0;
   int checkSum;
   numThreads = NUMTHREADS;
@@ -118,19 +115,18 @@ int main(int argc, char* argv[])
     a[i] = i*1.0;
     b[i] = 1.0;
   } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2 
-  
-  
-  totalTime = -nont_vSched_get_wtime(); // set this to 0 because we are not in a threaded computation region
-  dotProdFunc();
-  totalTime += nont_vSched_get_wtime(); // set this to 0 because we are not in a threaded computation region
+ 
+  totalTime = -nont_vSched_get_wtime(); 
+  dotProdFunc(NULL);
+  totalTime += nont_vSched_get_wtime(); 
   
   printf("totalTime: %f \n", totalTime);
 
   myfile = fopen("outFilePerf.dat","a+");
   fprintf(myfile, "\t%d\t%d\t%f\t%f\n", numThreads, probSize, static_fraction, totalTime);
   fclose(myfile);
-	
-  printf("Completed the program vecSum. The solution is: %f \n", sum);
+
+  printf("Completed the program dot Prod for testing vSched. The solution of the program is: %f \n", sum);
 
   vSched_finalize(numThreads);
 }

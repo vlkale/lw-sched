@@ -179,7 +179,7 @@ int loop_next_cdy(int *pstart, int *pend, int tid)
   return 1;
 }
 
-int loop_start_ssds(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
+int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *pend, int threadID, int numThreads )  // think about adding to parameter list here
 {
   pthread_mutex_lock(&sched_lock); // check if the lock is needed around the whole conditional clause
   if(count == 0)
@@ -229,7 +229,7 @@ int selectAnotherThread(int tid, int numThreads)
 /*
 This is the staggered method for mixed static/dynamic scheduling .
 */
-int loop_next_ssds(int *pstart, int *pend, int tid)
+int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
 {
 #ifdef PROFILING
   double time_loop_next = 0.0;

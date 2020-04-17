@@ -14,7 +14,7 @@ int numThreads;
 
 
 /* -- Debugging -- */
-#define VERBOSE 1
+//#define VERBOSE 1
 
 /* --  Performance Measurement -- */
 double totalTime = 0.0;
@@ -70,13 +70,18 @@ while(iter < numIters) // timestep, or outer iteration, loop
    numThreads = omp_get_num_threads();
    // The first parameter is the loop scheduling strategy.
    FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
+#ifdef VERBOSE 
    if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+#endif 
     for (i = startInd; i < endInd; i++)
       {
           mySum += a[i]*b[i];
       }
     FORALL_END(statdynstaggered, startInd, endInd, threadNum)
+#ifdef VERBOSE
     if(VERBOSE == 1) printf("[%d] out of iter\n", threadNum);
+#endif
+    
     #pragma omp critical
       sum += mySum; // the vSched library could support reductions too. However, better would be to just use user-defined schedules being proposed for OpenMP and then use OpenMP's reductions. Code is kept like this to make an illustrative point about this software design tradeoff.
     } // end omp paralllel
@@ -116,10 +121,11 @@ int main(int argc, char* argv[])
   {
     a[i] = i*1.0;
     b[i] = 1.0;
+#ifdef VERBOSE
     int myTid = omp_get_thread_num();
     printf("tid in init = %d", myTid);
+#endif
   } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2
-
 
  
   totalTime = -nont_vSched_get_wtime(); 

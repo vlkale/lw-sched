@@ -1,17 +1,61 @@
-# include <stdlib.h>
-# include <stdio.h>
-# include <math.h>
+/* -- Libraries for C/C++  -- */
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 # include <time.h>
 
-# include <omp.h>
+/* -- library for parallelization of code -- */
+// #include <pthread.h>
 
-int main ( );
+#ifdef MPI
+#include <mpi.h>
+#endif
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+/* variables to support parallelization of code */
+#define NUMTHREADS 16 // default constant and set value for the number of threads                                                            
+int numThreads;
+
+/* -- Application specific #defines and variables -- */
+#define MAX_ITER 1000
+#define PROBSIZE 16384 // Default values based on architecture. For a proper test, the problem size ought to be such that data goes out of cache.                                                               
+int probSize;
+int numIters;
+
+/* -- Debugging -- */
+//#define VERBOSE 1                                                                                                                                  
+
+/* --  Performance Measurement -- */
+double totalTime = 0.0;
+FILE* myfile;// output file for experimental data                                                                                                                                      
+
+/* --  Hardware Profiling -- */
+// #define USE_PAPI                                                                                                                                                                                       
+ #ifdef USE_PAPI
+ #include <papi.h>  // Leave PAPI out for now to make fully portable. Some platforms don't have the L2 and L3 cache misses available. TODO: need a way to check the counters in config or programmatically.   
+ #endif
+
+/* --Library for scheduling strategy and variables and macros associated with the library -- */
+#include "vSched.h"
+double constraint;
+double fs;
+// in the below macros, strat is how we specify the library                                    
+#define FORALL_BEGIN(strat, s,e, start, end, tid, numThds )  loop_start_ ## strat (s,e ,&start, &end, tid, numThds);  do {
+#define FORALL_END(strat, start, end, tid)  } while( loop_next_ ## strat (&start, &end, tid));
+double static_fraction = 1.0; /* runtime param */ // name this differently than the actual strategy  
+int chunk_size  = 10;
+
+
+int main (int argc, char** argv );
 int i4_min ( int i1, int i2 );
 void timestamp ( );
 
 /******************************************************************************/
 
-int main ( )
+int main (int argc, char** argv )
 
 /******************************************************************************/
 /*
@@ -27,23 +71,35 @@ int main ( )
 
     This code is distributed under the GNU LGPL license. 
 
-  Modified:
+  Original Modified:
 
     03 September 2012
+
+  Revision Modified: 
+    19 April 2020
 
   Author:
 
     John Burkardt
 
+  Revision Author: 
+
+     Vivek Kale 
+
+  Purpose: 
+   The revision author uses the original code to demonstrate and test the use low-overhead loop scheduling strategy through library vSched
+
   Local Parameters:
 
     Local, int COUNT_MAX, the maximum number of iterations taken
     for a particular pixel.
+
+
 */
 {
   int m = 500;
   int n = 500;
-
+  
   int b[m][n];
   int c;
   int count[m][n];
@@ -54,7 +110,7 @@ int main ( )
   int jhi;
   int jlo;
   int k;
-  char *output_filename = "mandelbrot_openmp.ppm";
+  char const *output_filename = "mandelbrot_openmp.ppm"; // use const to allow for c++ string conversion
   FILE *output_unit;
   int r[m][n];
   double wtime;
@@ -68,6 +124,18 @@ int main ( )
   double y;
   double y1;
   double y2;
+
+  #ifdef MPI 
+  MPI_Init(&argc, &argv);
+  #endif
+
+  int numThreads;
+  int threadNum;
+  
+#pragma omp parallel
+  numThreads = omp_get_num_threads();
+  
+  vSched_init(numThreads);
 
   timestamp ( );
   printf ( "\n" );
@@ -88,16 +156,46 @@ int main ( )
   printf ( "    M = %d pixels in the X direction and\n", m );
   printf ( "    N = %d pixels in the Y direction.\n", n );
 
+  // one should get the three variable's values from the user input, but we predefine/hardcode for now. 
+  double static_fraction = 0.5;
+  double constraint =0.1;
+  int chunk_size = 4;
+  setCDY(static_fraction, constraint, chunk_size); // set constraint parameter of scheduling strategy for vSched
+  omp_sched_t schedule;
+  int chunksize = chunk_size;  
+  omp_get_schedule(&schedule, &chunksize);  
+  printf ( "OpenMP schedule: OMP_SCHEDULE=%d\n", (int) schedule );
+
+   // chunk start and end indices for vSched runtime to set and retrieve 
+  int startInd;
+  int endInd;
+  // upper bound of loop that gets parallelized by OpenMP, used by vSched
+  int probSize; 
+
+  probSize = m; // set to loop bound of loop that gets parallelized by OpenMP
+  
   wtime = omp_get_wtime ( );
+
+  
 /*
   Carry out the iteration for each pixel, determining COUNT.
 */
+
 # pragma omp parallel \
   shared ( b, count, count_max, g, r, x_max, x_min, y_max, y_min ) \
   private ( i, j, k, x, x1, x2, y, y1, y2 )
 {
-# pragma omp for
-
+  // # pragma omp for
+   threadNum = omp_get_thread_num();
+   numThreads = omp_get_num_threads();
+      // # pragma omp for schedule(user:mystatic, &lr) collapse(2)  // prototype UDS placeholder
+   // The first parameter is the loop scheduling strategy. 
+   
+   FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
+#ifdef VERBOSE
+   if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+#endif
+  
   for ( i = 0; i < m; i++ )
   {
     y = ( ( double ) (     i - 1 ) * y_max   
@@ -145,7 +243,13 @@ int main ( )
       }
     }
   }
-}
+  
+  FORALL_END(statdynstaggered, startInd, endInd, threadNum)
+#ifdef VERBOSE
+    if(VERBOSE == 1) printf("[%d] out of iter\n", threadNum);
+#endif
+  
+ } // end parallel 
 
   wtime = omp_get_wtime ( ) - wtime;
   printf ( "\n" );
@@ -183,6 +287,12 @@ int main ( )
   printf ( "  Normal end of execution.\n" );
   printf ( "\n" );
   timestamp ( );
+
+  vSched_finalize(numThreads);
+
+  #ifdef MPI
+  MPI_Finalize(MPI_COMM_WORLD);
+  #endif 
 
   return 0;
 }

@@ -6,7 +6,9 @@
 /* -- library for parallelization of code -- */
 // #include <pthread.h>
 
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 /* variables to support parallelization of code */
 #define NUMTHREADS 16 // default constant and set value for the number of threads

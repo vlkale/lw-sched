@@ -186,11 +186,11 @@ int loop_start_statdynstaggered(int loopBegin, int _loopEnd, int *pstart, int *p
     count = numThreads;
   pthread_mutex_unlock(&sched_lock);
   pthread_mutex_lock(&dynwork[threadID]->qLock);
-// printf("loop_start_cdy(): thread %d \n", threadID);
+  // printf("loop_start_cdy(): thread %d \n", threadID);
   loopEnd = _loopEnd;
   dynwork[threadID]->limit = loopBegin + ((loopEnd - loopBegin)*(threadID+1))/numThreads;
-  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID))/numThreads; /* figure out algebra  here , based on loopBegin */
-  *pend = *pstart + ((loopEnd - loopBegin)*f_s)/numThreads; /* figure out algebra  here , based on loopBegin, check */
+  *pstart = loopBegin + (((loopEnd - loopBegin)*threadID))/numThreads; /* figure out algebra  here, based on loopBegin */
+  *pend = *pstart + ((loopEnd - loopBegin)*f_s)/numThreads; /* figure out algebra  here, based on loopBegin */
   dynwork[threadID]->nextChunk = *pend;
   dynwork[threadID]->chunkSize = chunkSize;
   pthread_mutex_unlock(&(dynwork[threadID]->qLock));
@@ -238,25 +238,26 @@ int loop_next_statdynstaggered(int *pstart, int *pend, int tid)
   int t_x  = -1;
   if (count == 0) return 0;
   pthread_mutex_lock(&(dynwork[tid]->qLock));
-  if(dynwork[tid]->nextChunk < dynwork[tid]->limit) // the thread still has work to be done in its own queue
-  {
-    #ifdef VERBOSE
+  if (dynwork[tid]->nextChunk < dynwork[tid]->limit) // the thread still has work to be done in its own queue
+    {
+#ifdef VERBOSE
     printf("loop_next_sds(): thread %d . There is work in the local queue. nextChunk = %d \t limit = %d \n", tid, nextChunk, dynwork[tid]->limit);
-      #endif
+#endif
     *pstart = dynwork[tid]->nextChunk;
     dynwork[tid]->nextChunk = dynwork[tid]->nextChunk + dynwork[tid]->chunkSize;
-    if(dynwork[tid]->nextChunk > dynwork[tid]->limit) dynwork[tid]->nextChunk = dynwork[tid]->limit;
-    *pend  = dynwork[tid]->nextChunk;
+    if (dynwork[tid]->nextChunk > dynwork[tid]->limit) dynwork[tid]->nextChunk = dynwork[tid]->limit;
+    *pend = dynwork[tid]->nextChunk;
     pthread_mutex_unlock(&(dynwork[tid]->qLock));
-    if(dynwork[tid]->nextChunk >= dynwork[tid]->limit) // this thread is done with its own queue
+    if (dynwork[tid]->nextChunk >= dynwork[tid]->limit) // this thread is done with its own queue
     {
       pthread_mutex_lock(&sched_lock);
       count--;
       pthread_mutex_unlock(&sched_lock);
     }
+    
 #ifdef PROFILING
     time_loop_next += vSched_get_wtime();
-    #ifdef VERBOSE
+#ifdef VERBOSE
     printf("loop_next_ssds(): thread %d \t time = %f  \n" , tid, time_loop_next);
     #endif
 #endif

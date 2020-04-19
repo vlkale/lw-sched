@@ -22,9 +22,9 @@ FILE* myfile;// output file for experimental data
 
 /* --  Hardware Profiling -- */
 // #define USE_PAPI 
-// #ifdef USE_PAPI
-// #include <papi.h>  // Leave PAPI out for now to make fully portable. Some platforms don't have the L2 and L3 cache misses available. TODO: need a way to check the counters in config or programmatically. 
-// #endif
+ #ifdef USE_PAPI
+ #include <papi.h>  // Leave PAPI out for now to make fully portable. Some platforms don't have the L2 and L3 cache misses available. TODO: need a way to check the counters in config or programmatically. 
+ #endif
 
 /* --Library for scheduling strategy and variables and macros associated with the library -- */
 #include "vSched.h"

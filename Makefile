@@ -43,7 +43,7 @@ tgz: appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarr
 	tar -cvzf appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c README
 
 clean:
-	rm -rf *.o test_vSched test_tqueue_forMac test_vSchedomp
+	rm -rf *.o test_vSched test_tqueue_forMac test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds
 
 realclean:
 	rm -rf *.o core *.gch test_vSched test_vSchedforMac test_vSchedOpenMP test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds

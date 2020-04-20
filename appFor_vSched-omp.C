@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 /* -- library for parallelization of code -- */
 // #include <pthread.h>
@@ -57,20 +58,21 @@ void dotProdFunc(void* arg)
  int threadNum;
  int numThreads;
  int i = 0;
-/* initialization */
-int startInd;
-int endInd;
 
 while(iter < numIters) // timestep, or outer iteration, loop
   {
     mySum = 0.0;
    sum = 0.0;
    setCDY(static_fraction, constraint, chunk_size); // set constraint parameter of scheduling strategy
-#pragma omp parallel 
+#pragma omp parallel
    {
    threadNum = omp_get_thread_num();
    numThreads = omp_get_num_threads();
    // The first parameter is the loop scheduling strategy.
+   /* initialization */
+   int startInd = 0;
+   int endInd = 0;
+   mySum = 0; 
    FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
 #ifdef VERBOSE 
    if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
@@ -88,8 +90,8 @@ while(iter < numIters) // timestep, or outer iteration, loop
       sum += mySum; // the vSched library could support reductions too. However, better would be to just use user-defined schedules being proposed for OpenMP and then use OpenMP's reductions. Code is kept like this to make an illustrative point about this software design tradeoff.
     } // end omp paralllel
      iter++;
-  } // end timestep loop 
-
+  } // end timestep loop
+ 
 } // end dotProdFunc
 
 int main(int argc, char* argv[])
@@ -130,9 +132,12 @@ int main(int argc, char* argv[])
   } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2
 
  
-  totalTime = -nont_vSched_get_wtime(); 
+  // totalTime = -nont_vSched_get_wtime();
+
+  totalTime = - omp_get_wtime();
   dotProdFunc(NULL);
-  totalTime += nont_vSched_get_wtime(); 
+  totalTime += omp_get_wtime();
+  //xcy  totalTime += nont_vSched_get_wtime(); 
   
   printf("totalTime: %f \n", totalTime);
 

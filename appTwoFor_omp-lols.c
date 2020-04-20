@@ -136,9 +136,8 @@ int main (int argc, char** argv )
 
   double static_fraction = 0.5;
   double constraint = 0.1;
-  int chunk_size = 4;
-  
-  
+  int chunk_size = 1;
+    
   if(argc <= 2) // if user fails to put in minimum args, which are for application domain specific for this test
     {
       //  char userReplyDefault;
@@ -201,19 +200,12 @@ int main (int argc, char** argv )
   printf ( "  An ASCII PPM image of the set is created using\n" );
   printf ( "    M = %d pixels in the X direction and\n", m );
   printf ( "    N = %d pixels in the Y direction.\n", n );
-    
+  
   omp_sched_t schedule;
   int chunksize = chunk_size;  
-  omp_get_schedule(&schedule, &chunksize);  
+  omp_get_schedule(&schedule, &chunksize);
   printf ( "OpenMP schedule: OMP_SCHEDULE=%d\t%d\n", (int) schedule, chunksize);
-  
-   // chunk start and end indices for vSched runtime to set and retrieve 
-  int startInd;
-  int endInd;
-  // upper bound of loop that gets parallelized by OpenMP, used by vSched
-  int probSize; 
-  probSize = m; // set to loop bound of loop that gets parallelized by OpenMP
- 
+    
   wtime = omp_get_wtime ( );
   
 /*
@@ -234,22 +226,25 @@ int main (int argc, char** argv )
   threadNum = omp_get_thread_num();
   numThreads = omp_get_num_threads();
 #ifdef USE_VSCHED
-
+     
+  int startInd;
+  int endInd; // chunk start and end indices for vSched runtime to set and retrieve 
   setCDY(static_fraction, constraint, chunk_size); // set parameter of scheduling strategy for vSched
-  FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)   
+  probSize = m; // set to loop bound of loop that gets parallelized by OpenMP
+  FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads) 
 #ifdef VERBOSE
    if(VERBOSE==1) printf("Thread [%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
 #endif
+  for (i = startInd ; i < endInd ; i++)
 #else
   #ifdef VERBOSE
   if(VERBOSE==1) printf("Thread [%d] : iter = %d executing a chunk \n", threadNum,iter);
 #endif
   #pragma omp for schedule(guided, chunk_size)
-#endif
   { // add parens to show comparison with forall macro
-
-
   for ( i = 0; i < m; i++ )
+#endif
+
   {
     y = ( ( double ) (     i - 1 ) * y_max   
         + ( double ) ( m - i     ) * y_min ) 
@@ -296,11 +291,11 @@ int main (int argc, char** argv )
       }
     }
   }
-  
-     } //End parallelized for block
 
 #ifdef USE_VSCHED
  FORALL_END(statdynstaggered, startInd, endInd, threadNum)
+#else     
+     } //End parallelized for block
 #endif
 
 

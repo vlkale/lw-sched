@@ -16,11 +16,11 @@ all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_o
 test_vSched: appFor_vSchedSimple.c vSched.h vSched.c
 	$(CLANGXX) -fPIC vSched.c appFor_vSchedSimple.c -DCDY_ $(OPTS) -o test_vSched
 
-testAppOne_omp-lols-vSched: appFor_omp-lols.c vSched.h vSched.c
-	$(CLANGXX) appFor_omp-lols.c vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppOne_omp-lols-vSched
+testAppOne_omp-lols-vSched: appFor_omp-lols.C vSched.h vSched.c
+	$(CLANGXX) appFor_omp-lols.C vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppOne_omp-lols-vSched
 
-testAppOne_omp-lols-uds: appTwoFor_omp-lols.c vSched.h vSched.c
-	$(CLANGXX) appFor_omp-lols.c vSched.c -fopenmp $(OPTS) -o testAppOne_omp-lols-uds
+testAppOne_omp-lols-uds: appFor_omp-lols.C vSched.h vSched.c
+	$(CLANGXX) appFor_omp-lols.C vSched.c -fopenmp $(OPTS) -o testAppOne_omp-lols-uds
 
 testAppTwo_omp-lols-vSched: appTwoFor_omp-lols.c vSched.h vSched.c
 	$(CLANGXX) appTwoFor_omp-lols.c vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppTwo_omp-lols-vSched
@@ -42,7 +42,7 @@ test_vSchedOpenMP: appFor_vSchedSimpleOpenMP.c vSched.h vSched.c
 
 test_vSchedomp: appFor_vSched-omp.C vSched.h vSched.c
 	$(MPICXX) -fPIC -g $(OPTS) -I. vSched.h vSched.c appFor_vSched-omp.C -o test_vSchedomp
-
+ 
 test:
 	./test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
 	./testAppOne_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1

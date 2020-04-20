@@ -58,8 +58,6 @@ void dotProdFunc(void* arg)
  int numThreads;
  int i = 0;
 /* initialization */
-int startInd;
-int endInd;
 
 while(iter < numIters) // timestep, or outer iteration, loop
   {
@@ -70,24 +68,31 @@ while(iter < numIters) // timestep, or outer iteration, loop
    threadNum = omp_get_thread_num();
    numThreads = omp_get_num_threads();
    #ifdef USE_VSCHED
-  setCDY(static_fraction, constraint, chunk_size); // set parameter of scheduling strategy for vSched                                                                                                              // The first parameter is the loop scheduling strategy. 
-  FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
+   setCDY(static_fraction, constraint, chunk_size); // set parameter of scheduling strategy for vSched                                                                                                              // The first parameter is the loop scheduling strategy.
+   int startInd = 0;
+   int endInd = 0;
+   FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
+     for (i = startInd; i < endInd; i++)
+       
 #ifdef VERBOSE
-   if(VERBOSE==1) printf("Thread [%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+       if(VERBOSE==1) printf("Thread [%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
 #endif
 #else
-  #ifdef VERBOSE
-  if(VERBOSE==1) printf("Thread [%d] : iter = %d executing a chunk \n", threadNum,iter);
+#ifdef VERBOSE
+   if(VERBOSE==1) printf("Thread [%d] : iter = %d executing a chunk \n", threadNum,iter);
 #endif
-  #pragma omp for schedule(guided, chunk_size)
+#pragma omp for schedule(guided, chunk_size)
+   for (i = 0; i < probSize; i++)
+   {
 #endif
-   
-    for (i = startInd; i < endInd; i++)
       {
+
           mySum += a[i]*b[i];
       }
 #ifdef USE_VSCHED
     FORALL_END(statdynstaggered, startInd, endInd, threadNum)
+#else
+      }
 #endif
     #pragma omp critical
       sum += mySum; // the vSched library could support reductions too. However, better would be to just use user-defined schedules being proposed for OpenMP and then use OpenMP's reductions. Code is kept like this to make an illustrative point about this software design tradeoff.
@@ -102,22 +107,24 @@ int main(int argc, char* argv[])
   long i;
   double totalTime = 0.0;
   int checkSum;
-  numThreads = NUMTHREADS;
-  probSize = PROBSIZE;
-  numIters = MAX_ITER;
   if(argc < 3)
-    printf("usage: appName [probSize][numThreads] (static_fraction) (constraint) (numIters) \n");
-  else if(argc > 2)
+    {
+      printf("Usage: appName [probSize][numIters] (numThreads) (chunksize) (static_fraction) (constraint) \n");
+      probSize = PROBSIZE;
+      numIters = MAX_ITER;
+    }
+  else
   {
     probSize = atoi(argv[1]);
-    numThreads = atoi(argv[2]);
+    numIters = atoi(argv[2]);
   }
-  if(argc > 3) static_fraction = atof(argv[3]);
-  if(argc > 4) constraint = atof(argv[4]);
-  if(argc > 5) numIters = atoi(argv[5]);
-  if(argc > 6) chunk_size = atoi(argv[6]);
+  if(argc > 3) numThreads = atoi(argv[3]);
+  if(argc > 4) chunk_size = atoi(argv[4]);
+  if(argc > 5) static_fraction = atof(argv[5]);
+  if(argc > 6) constraint = atof(argv[6]);
 
   printf("starting OpenMP application using vSched. threads = %d \t probSize = %d \t numIters = %d \n", numThreads, probSize, numIters);
+
   vSched_init(numThreads);
   a = (float*)malloc(sizeof(float)*probSize);
   b = (float*)malloc(sizeof(float)*probSize);
@@ -135,9 +142,9 @@ int main(int argc, char* argv[])
   } // The input vectors are initialized in this way to simplify checking the correctness of the output: the sum of n numbers from 1..n is (n*(n+1))/2
 
  
-  totalTime = -nont_vSched_get_wtime(); 
+  totalTime = -omp_get_wtime(); 
   dotProdFunc(NULL);
-  totalTime += nont_vSched_get_wtime(); 
+  totalTime += omp_get_wtime(); 
   
   printf("totalTime: %f \n", totalTime);
 
@@ -146,6 +153,6 @@ int main(int argc, char* argv[])
   fclose(myfile);
 
   printf("Completed the program dot Prod for testing vSched. The solution of the program is: %f \n", sum);
-
+  
   vSched_finalize(numThreads);
 }

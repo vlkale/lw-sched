@@ -9,24 +9,37 @@ CLANGXX = clang++
 DEBUG=-g
 
 # Choose the number of cores on the system for make test
-NUMCORES=64 
+NUMCORES=64
+
+INCLUDE_DIR = include
+SRC_DIR = src
+LIB_DIR = lib
+BIN_DIR = bin
+EXAMPLES_DIR = examples
+VVTESTS_DIR = tests/vv
+PERFTESTS_DIR = tests/perf
+
+# shouldn't be needed here
+UKERNELS_DIR = share/ukernels
+
+#vSched and uds could be thought of as two different vendor implementations, though they actually have different interfaces in this case as well (the technique is the same though)
 
 all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
 
-test_vSched: appFor_vSchedSimple.c vSched.h vSched.c
-	$(CLANGXX) -fPIC vSched.c appFor_vSchedSimple.c -DCDY_ $(OPTS) -o test_vSched
+test_vSched: $(PERFTESTS_DIR)/appFor_vSchedSimple.c
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_vSchedSimple.c -DCDY_ $(OPTS) -o $(BIN_DIR)/test_vSched
 
-testAppOne_omp-lols-vSched: appFor_omp-lols.C vSched.h vSched.c
-	$(CLANGXX) appFor_omp-lols.C vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppOne_omp-lols-vSched
+testAppOne_omp-lols-vSched: $(PERFTESTS_DIR)/testOneFor_omp-lols.C
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_omp-lols.C -DUSE_VSCHED $(OPTS) -o $(BIN_DIR)/testAppOne_omp_lols-vSched
 
-testAppOne_omp-lols-uds: appFor_omp-lols.C vSched.h vSched.c
-	$(CLANGXX) appFor_omp-lols.C vSched.c -fopenmp $(OPTS) -o testAppOne_omp-lols-uds
+testAppOne_omp-lols-uds: $(PERFTESTS_DIR)/testOneFor_omp-lols.C
+	$(CLANGXX) -fPIC $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_omp-lols.C $(OPTS) -o $(BIN_DIR)/testAppOne_omp_lols-uds
 
-testAppTwo_omp-lols-vSched: appTwoFor_omp-lols.c vSched.h vSched.c
-	$(CLANGXX) appTwoFor_omp-lols.c vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppTwo_omp-lols-vSched
+testAppTwo_omp-lols-vSched: $(PERFTESTS_DIR)/testTwoFor_omp-lols.c
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testTwoFor_omp-lols.C -DUSE_VSCHED $(OPTS) -o $(BIN_DIR)/testAppTwo_omp_lols-vSched
 
-testAppTwo_omp-lols-uds: appTwoFor_omp-lols.c vSched.h vSched.c
-	$(CLANGXX) appTwoFor_omp-lols.c vSched.c -fopenmp $(OPTS) -o testAppTwo_omp-lols-uds
+testAppTwo_omp-lols-uds: $(PERFTESTS_DIR)/testTwoFor_omp-lols.c
+	$(CLANGXX) $(PERFTESTS_DIR)/testTwoFor_omp-lols.c -fopenmp $(OPTS) -o $(BIN_DIR)/testAppTwo_omp-lols-uds
 
 test_tQueue: appFor_vSchedSimple.C
 	$(GXX) -fPIC -g threadedQueue.h threadedQueue.C appFor_threadedQueueSimple.C -DCDY_ $(OPTS) -o test_vSched
@@ -42,7 +55,7 @@ test_vSchedOpenMP: appFor_vSchedSimpleOpenMP.c vSched.h vSched.c
 
 test_vSchedomp: appFor_vSched-omp.C vSched.h vSched.c
 	$(MPICXX) -fPIC -g $(OPTS) -I. vSched.h vSched.c appFor_vSched-omp.C -o test_vSchedomp
- 
+
 test:
 	./test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
 	./testAppOne_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
@@ -56,7 +69,7 @@ tgz: appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarr
 	tar -cvzf appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c README
 
 clean:
-	rm -rf *.o test_vSched test_tqueue_forMac test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
+	rm -rf *.o $(BIN_DIR)/test_v* $(BIN_DIR)/test_o*
 
 realclean:
-	rm -rf *.o core *.gch test_vSched test_vSchedforMac test_vSchedOpenMP test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
+	rm -rf *.o core *.gch $(BIN_DIR)/test_v* $(BIN_DIR)/test_o* 

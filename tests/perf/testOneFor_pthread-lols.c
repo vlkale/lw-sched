@@ -27,7 +27,7 @@ FILE* myfile;// output file for experimental data
 // #endif
 
 /* --Library for scheduling strategy and variables and macros associated with the library -- */
-#include "vSched.h"
+#include "../../include/vSched.h"
 double constraint;
 double fs;
 // in the below macros, strat is how we specify the library

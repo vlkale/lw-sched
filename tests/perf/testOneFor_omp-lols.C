@@ -29,7 +29,10 @@ FILE* myfile;// output file for experimental data
  #endif
 
 /* --Library for scheduling strategy and variables and macros associated with the library -- */
-#include "vSched.h"
+#ifdef USE_VSCHED
+#include "../../include/vSched.h"
+#endif
+
 double constraint;
 double fs;
 // in the below macros, strat is how we specify the library
@@ -124,8 +127,10 @@ int main(int argc, char* argv[])
   if(argc > 6) constraint = atof(argv[6]);
 
   printf("starting OpenMP application using vSched. threads = %d \t probSize = %d \t numIters = %d \n", numThreads, probSize, numIters);
-
+#ifdef USE_VSCHED
   vSched_init(numThreads);
+#endif
+
   a = (float*)malloc(sizeof(float)*probSize);
   b = (float*)malloc(sizeof(float)*probSize);
 	
@@ -153,6 +158,7 @@ int main(int argc, char* argv[])
   fclose(myfile);
 
   printf("Completed the program dot Prod for testing vSched. The solution of the program is: %f \n", sum);
-  
+  #ifdef USE_VSCHED
   vSched_finalize(numThreads);
+  #endif
 }

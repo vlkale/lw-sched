@@ -26,17 +26,19 @@ UKERNELS_DIR = share/ukernels
 
 all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
 
-test_vSched: $(PERFTESTS_DIR)/appFor_vSchedSimple.c
-	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_vSchedSimple.c -DCDY_ $(OPTS) -o $(BIN_DIR)/test_vSched
+#tODO: need to figure out how to get UKERNELS dir to compile
+
+test_vSched: $(PERFTESTS_DIR)/testOneFor_pthread-lols.c 
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c -I/$(INCLUDE_DIR) $(PERFTESTS_DIR)/testOneFor_pthread-lols.c -DCDY_ $(OPTS) -o $(BIN_DIR)/test_vSched
 
 testAppOne_omp-lols-vSched: $(PERFTESTS_DIR)/testOneFor_omp-lols.C
-	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_omp-lols.C -DUSE_VSCHED $(OPTS) -o $(BIN_DIR)/testAppOne_omp_lols-vSched
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(PERFTESTS_DIR)/testOneFor_omp-lols.C -fopenmp -DUSE_VSCHED $(OPTS) -o $(BIN_DIR)/testAppOne_omp_lols-vSched
 
 testAppOne_omp-lols-uds: $(PERFTESTS_DIR)/testOneFor_omp-lols.C
-	$(CLANGXX) -fPIC $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testOneFor_omp-lols.C $(OPTS) -o $(BIN_DIR)/testAppOne_omp_lols-uds
+	$(CLANGXX) -fPIC $(PERFTESTS_DIR)/testOneFor_omp-lols.C $(OPTS) -fopenmp -o $(BIN_DIR)/testAppOne_omp_lols-uds
 
 testAppTwo_omp-lols-vSched: $(PERFTESTS_DIR)/testTwoFor_omp-lols.c
-	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(UKERNELS_DIR)/* $(PERFTESTS_DIR)/testTwoFor_omp-lols.C -DUSE_VSCHED $(OPTS) -o $(BIN_DIR)/testAppTwo_omp_lols-vSched
+	$(CLANGXX) -fPIC $(SRC_DIR)/vSched.c $(PERFTESTS_DIR)/testTwoFor_omp-lols.C -DUSE_VSCHED -fopenmp $(OPTS) -o $(BIN_DIR)/testAppTwo_omp_lols-vSched
 
 testAppTwo_omp-lols-uds: $(PERFTESTS_DIR)/testTwoFor_omp-lols.c
 	$(CLANGXX) $(PERFTESTS_DIR)/testTwoFor_omp-lols.c -fopenmp $(OPTS) -o $(BIN_DIR)/testAppTwo_omp-lols-uds
@@ -57,13 +59,13 @@ test_vSchedomp: appFor_vSched-omp.C vSched.h vSched.c
 	$(MPICXX) -fPIC -g $(OPTS) -I. vSched.h vSched.c appFor_vSched-omp.C -o test_vSchedomp
 
 test:
-	./test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
-	./testAppOne_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
-	./testAppOne_omp-lols-uds 65536 10 $(NUMCORES) 64 0.5 0.1
+	$(BIN_DIR)/test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+	$(BIN_DIR)/testAppOne_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+	$(BIN_DIR)/testAppOne_omp-lols-uds 65536 10 $(NUMCORES) 64 0.5 0.1
 #	./testAppTwo_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
 #	./testAppTwo_omp-lols-uds 65536 10 $(NUMCORES) 64 0.5 0.1
-	./testAppTwo_omp-lols-vSched 500 1 64
-	./testAppTwo_omp-lols-uds 500 1 64
+	$(BIN_DIR)/testAppTwo_omp-lols-vSched 500 1 64
+	$(BIN_DIR)/testAppTwo_omp-lols-uds 500 1 64
 
 tgz: appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c 
 	tar -cvzf appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c README

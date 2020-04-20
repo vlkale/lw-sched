@@ -12,8 +12,13 @@
 * LAST REVISED:  06/02/17 Blaise Barney
 ******************************************************************************/
 
+#ifdef MPI
 #include <mpi.h>
+#endif
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif 
 #include <stdio.h>
 #include <stdlib.h>
 

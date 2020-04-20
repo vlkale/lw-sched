@@ -52,7 +52,6 @@ FILE* myfile;// output file for experimental data
 #define FORALL_BEGIN(strat, s,e, start, end, tid, numThds )  loop_start_ ## strat (s,e ,&start, &end, tid, numThds);  do {
 #define FORALL_END(strat, start, end, tid)  } while( loop_next_ ## strat (&start, &end, tid));
 
-
 int main (int argc, char** argv );
 int i4_min ( int i1, int i2 );
 void timestamp ( );
@@ -126,7 +125,6 @@ int main (int argc, char** argv )
   double y;
   double y1;
   double y2;
-
   
   #ifdef MPI 
   MPI_Init(&argc, &argv);
@@ -185,7 +183,6 @@ int main (int argc, char** argv )
   vSched_init(numThreads);
 #endif
 
-
   timestamp ( );
   printf ( "\n" );
   printf ( "MANDELBROT_OPENMP\n" );
@@ -204,7 +201,6 @@ int main (int argc, char** argv )
   printf ( "  An ASCII PPM image of the set is created using\n" );
   printf ( "    M = %d pixels in the X direction and\n", m );
   printf ( "    N = %d pixels in the Y direction.\n", n );
-
     
   omp_sched_t schedule;
   int chunksize = chunk_size;  

@@ -8,6 +8,9 @@ GXX = c++ $(OPTS)
 CLANGXX = clang++
 DEBUG=-g
 
+# Choose the number of cores on the system for make test
+NUMCORES=64 
+
 all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds
 
 test_vSched: appFor_vSchedSimple.c vSched.h vSched.c
@@ -34,10 +37,10 @@ test_vSchedOpenMP: appFor_vSchedSimpleOpenMP.c vSched.h vSched.c
 test_vSchedomp: appFor_vSched-omp.C vSched.h vSched.c
 	$(MPICXX) -fPIC -g $(OPTS) -I. vSched.h vSched.c appFor_vSched-omp.C -o test_vSchedomp
 
-test: test_vSched
-	./test_vSched 65536 1000 16 64 0.5 0.1
-	./testAppTwo_omp-lols-vSched 65536 1000 16 64 0.5 0.1
-	./testAppTwo_omp-lols-uds 65536 1000 16 64 0.5 0.1	
+test:
+	./test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+	./testAppTwo_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+	./testAppTwo_omp-lols-uds 65536 10 16 $(NUMCORES) 0.5 0.1	
 
 tgz: appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c 
 	tar -cvzf appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c README

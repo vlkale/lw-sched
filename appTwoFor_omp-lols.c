@@ -19,16 +19,21 @@ using namespace std;
 #endif
 
 /* variables to support parallelization of code */
-#define NUMTHREADS 16 // default constant and set value for the number of threads                                                            
+
+#define DEFAULT_NUMTHREADS 16 // default constant and set value for the number of threads
 int numThreads;
 
 /* -- Application specific #defines and variables -- */
 int numOuterIters;
 int probSize;
+
+#define DEFAULT_NUMOUTERITERS 1
+#define DEFAULT_PROBSIZE 500 // Default values based on architecture. For a proper test, the problem size ought to be such that data goes out of cache.                                                               
 #define MAX_NUMITERS 100000000
 #define MAX_PROBSIZE 16384 // Default values based on architecture. For a proper test, the problem size ought to be such that data goes out of cache.                                                               
 /* -- Debugging -- */
-//#define VERBOSE 1                                                                                                                                  
+
+#define VERBOSE 1                                                                                                                                  
 
 /* --  Performance Measurement -- */
 double totalTime = 0.0;
@@ -43,15 +48,10 @@ FILE* myfile;// output file for experimental data
 /* --Library for scheduling strategy and variables and macros associated with the library -- */
 #include "vSched.h"
 
-
 // in the below macros, strat is how we specify the library                                    
 #define FORALL_BEGIN(strat, s,e, start, end, tid, numThds )  loop_start_ ## strat (s,e ,&start, &end, tid, numThds);  do {
 #define FORALL_END(strat, start, end, tid)  } while( loop_next_ ## strat (&start, &end, tid));
 
-    // one should get the three variable's values from the user input, but we predefine/hardcode for now. 
-double static_fraction = 0.8; /* runtime param */ // name this differently than the actual strategy  
-int chunk_size  = 10;
-double constraint= 0.1;
 
 int main (int argc, char** argv );
 int i4_min ( int i1, int i2 );
@@ -97,8 +97,6 @@ int main (int argc, char** argv )
 
     Local, int COUNT_MAX, the maximum number of iterations taken
     for a particular pixel.
-
-
 */
 {
   int m = 500;
@@ -129,46 +127,64 @@ int main (int argc, char** argv )
   double y1;
   double y2;
 
+  
   #ifdef MPI 
   MPI_Init(&argc, &argv);
   #endif
 
   //for vSched 
-  int numThreads;
+  int numThreads = DEFAULT_NUMTHREADS;
   int threadNum;
-    
+
+  double static_fraction = 0.5;
+  double constraint = 0.1;
+  int chunk_size = 4;
+  
+  
   if(argc <= 2) // if user fails to put in minimum args, which are for application domain specific for this test
     {
       //  char userReplyDefault;
 
-      cout << "Usage: testAppTwo_omp_{loopSched} [numOuterIter] [probSize] [numThreads] [chunk_size] <static_fraction> <constraint>" << endl;
+      cout << "Usage: testAppTwo_omp_{loopSched} [probSize] [numOuterIters] [chunk_size] <static_fraction> <constraint>" << endl;
       cout << "Usage(cont'd): where {loopSched} is the implementation strategy or library you use, e.g., vSched's low-overhead scheduling, OpenMP rtl's low-overhead scheduling" << endl;
-      
+
       //      cout << "Use defaults? [y/N]" << endl ;
       //  cin << varName;
-      exit(1);
+      cout << "continuing with default problem size and app parameters." << endl;
+      probSize = DEFAULT_PROBSIZE;
+      numOuterIters = DEFAULT_NUMOUTERITERS; 
     }
 
-  else // required args
+  //   else // required args
+
+   else
     {
-      numOuterIters = atoi(argv[1]);
-      probSize = atoi(argv[2]);
+      probSize = atoi(argv[1]);
+      numOuterIters = atoi(argv[2]);
     }
-  if (argc > 3) numThreads = atoi(argv[3]);
-  if (argc > 4) chunk_size = atoi(argv[4]);  
-  if (argc > 5) static_fraction = atof(argv[5]);
-  if (argc > 6) constraint = atof(argv[6]);
+  if (argc > 3) chunk_size = atoi(argv[3]);  
+  if (argc > 4) static_fraction = atof(argv[4]);
+  if (argc > 5) constraint = atof(argv[5]);
+
 
   // set number of threads to input 
-  omp_set_num_threads(numThreads);
+  //omp_set_num_threads(numThreads);
 
 #pragma omp parallel
   {
+
+    #pragma omp master 
     cout << "Number of threads is : " << omp_get_num_threads() << endl;
+    
+#ifdef USE_VSCHED
+    numThreads = omp_get_num_threads();
+#endif
   }
-  #ifdef USE_VSCHED
+
+#ifdef USE_VSCHED
   vSched_init(numThreads);
-  #endif 
+#endif
+
 
   timestamp ( );
   printf ( "\n" );
@@ -189,7 +205,7 @@ int main (int argc, char** argv )
   printf ( "    M = %d pixels in the X direction and\n", m );
   printf ( "    N = %d pixels in the Y direction.\n", n );
 
-  
+    
   omp_sched_t schedule;
   int chunksize = chunk_size;  
   omp_get_schedule(&schedule, &chunksize);  
@@ -219,26 +235,30 @@ int main (int argc, char** argv )
    //TODO: figure out how to better template the scheduling strategy name in the below lines of code for both library implmentations
    // # pragma omp for schedule(user:statdynstaggered, &lr) collapse(2)  // prototype UDS placeholder
    // The first parameter is the loop scheduling strategy.
-#ifdef USE_VSCHED
   threadNum = omp_get_thread_num();
   numThreads = omp_get_num_threads();
+#ifdef USE_VSCHED
+
   setCDY(static_fraction, constraint, chunk_size); // set parameter of scheduling strategy for vSched
-  FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)
-#else
-  #pragma omp for schedule(guided, chunk_size)
-     // { // edd parens to show comparison with forall macro
-#endif
-     
+  FORALL_BEGIN(statdynstaggered, 0, probSize, startInd, endInd, threadNum, numThreads)   
 #ifdef VERBOSE
-   if(VERBOSE==1) printf("[%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
-#endif   
+   if(VERBOSE==1) printf("Thread [%d] : iter = %d \t startInd = %d \t  endInd = %d \t\n", threadNum,iter, startInd, endInd);
+#endif
+#else
+  #ifdef VERBOSE
+  if(VERBOSE==1) printf("Thread [%d] : iter = %d executing a chunk \n", threadNum,iter);
+#endif
+  #pragma omp for schedule(guided, chunk_size)
+#endif
+  { // add parens to show comparison with forall macro
+
 
   for ( i = 0; i < m; i++ )
   {
     y = ( ( double ) (     i - 1 ) * y_max   
         + ( double ) ( m - i     ) * y_min ) 
         / ( double ) ( m     - 1 );
-
+    
     for ( j = 0; j < n; j++ )
     {
       x = ( ( double ) (     j - 1 ) * x_max   
@@ -281,10 +301,13 @@ int main (int argc, char** argv )
     }
   }
   
-  //  } //End parallelized for block
+     } //End parallelized for block
+
 #ifdef USE_VSCHED
  FORALL_END(statdynstaggered, startInd, endInd, threadNum)
 #endif
+
+
    
    } // end parallel
 

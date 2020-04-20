@@ -11,10 +11,16 @@ DEBUG=-g
 # Choose the number of cores on the system for make test
 NUMCORES=64 
 
-all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds
+all: test_vSched testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
 
 test_vSched: appFor_vSchedSimple.c vSched.h vSched.c
 	$(CLANGXX) -fPIC vSched.c appFor_vSchedSimple.c -DCDY_ $(OPTS) -o test_vSched
+
+testAppOne_omp-lols-vSched: appFor_omp-lols.c vSched.h vSched.c
+	$(CLANGXX) appFor_omp-lols.c vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppOne_omp-lols-vSched
+
+testAppOne_omp-lols-uds: appTwoFor_omp-lols.c vSched.h vSched.c
+	$(CLANGXX) appFor_omp-lols.c vSched.c -fopenmp $(OPTS) -o testAppOne_omp-lols-uds
 
 testAppTwo_omp-lols-vSched: appTwoFor_omp-lols.c vSched.h vSched.c
 	$(CLANGXX) appTwoFor_omp-lols.c vSched.c -fopenmp -DUSE_VSCHED $(OPTS) -o testAppTwo_omp-lols-vSched
@@ -39,14 +45,18 @@ test_vSchedomp: appFor_vSched-omp.C vSched.h vSched.c
 
 test:
 	./test_vSched 65536 10 $(NUMCORES) 64 0.5 0.1
-	./testAppTwo_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
-	./testAppTwo_omp-lols-uds 65536 10 16 $(NUMCORES) 0.5 0.1	
+	./testAppOne_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+	./testAppOne_omp-lols-uds 65536 10 $(NUMCORES) 64 0.5 0.1
+#	./testAppTwo_omp-lols-vSched 65536 10 $(NUMCORES) 64 0.5 0.1
+#	./testAppTwo_omp-lols-uds 65536 10 $(NUMCORES) 64 0.5 0.1
+	./testAppTwo_omp-lols-vSched 500 1 64
+	./testAppTwo_omp-lols-uds 500 1 64
 
 tgz: appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c 
 	tar -cvzf appFor_vSchedSimpleOpenMP.c appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c README
 
 clean:
-	rm -rf *.o test_vSched test_tqueue_forMac test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds
+	rm -rf *.o test_vSched test_tqueue_forMac test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds
 
 realclean:
-	rm -rf *.o core *.gch test_vSched test_vSchedforMac test_vSchedOpenMP test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds
+	rm -rf *.o core *.gch test_vSched test_vSchedforMac test_vSchedOpenMP test_vSchedomp  testAppTwo_omp-lols-vSched testAppTwo_omp-lols-uds testAppOne_omp-lols-vSched testAppOne_omp-lols-uds

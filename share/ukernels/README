@@ -1,0 +1,4 @@
+
+On mac, compile by typing 
+
+mpicxx -Xclang -openmp -pthread -L/usr/local/opt/llvm/lib -I/usr/local/opt/llvm/include -ferror-limit=50 -lomp stencil.C

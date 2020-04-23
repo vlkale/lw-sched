@@ -3,7 +3,13 @@
 # include <ctime>
 # include <fstream>
 # include <iostream>
+#ifdef USE_MPI
 # include <mpi.h>
+#endif
+
+#ifdef _OPENMP
+# include "omp.h"
+#endif
 
 using namespace std;
 
@@ -59,10 +65,14 @@ int main ( int argc, char *argv[] )
   int id;
   int p;
   double wtime;
-
+#ifdef USE_MPI
   MPI_Init ( &argc, &argv );
   MPI_Comm_rank ( MPI_COMM_WORLD, &id );
   MPI_Comm_size ( MPI_COMM_WORLD, &p );
+  #else
+  id = 0;
+  p = 1;
+#endif
 
   if ( id == 0 )
   {
@@ -77,7 +87,11 @@ int main ( int argc, char *argv[] )
 //
   if ( id == 0 ) 
   {
+    #ifdef USE_MPI
     wtime = MPI_Wtime ( );
+    #else
+    wtime = omp_get_wtime();
+    #endif
   }
 
   update ( id, p );
@@ -86,15 +100,21 @@ int main ( int argc, char *argv[] )
 //
   if ( id == 0 )
   {
+    #ifdef USE_MPI
     wtime = MPI_Wtime ( ) - wtime;
-
+    #else
+    wtime = omp_get_wtime();
+    #endif
+    
     cout << "\n";       
     cout << "  Wall clock elapsed seconds = " << wtime << "\n";      
   }
 //
 //  Terminate MPI.
 //
+  #ifdef USE_MPI
   MPI_Finalize ( );
+  #endif
 //
 //  Terminate.
 //
@@ -151,8 +171,10 @@ void update ( int id, int p )
   int j_min = 0;
   int j_max = 400;
   double k = 0.002;
-  int n = 11;
+  int n = 100000000;
+#ifdef USE_MPI
   MPI_Status status;
+#endif 
   int tag;
   double time;
   double time_delta;
@@ -200,6 +222,7 @@ void update ( int id, int p )
 //
   x = new double[n+2];
 
+  #pragma omp parallel for
   for ( i = 0; i <= n + 1; i++ )
   {
     x[i] = ( ( double ) (         id * n + i - 1 ) * x_max
@@ -288,7 +311,9 @@ void update ( int id, int p )
     if ( 0 < id )
     {
       tag = 1;
+      #ifdef USE_MPI
       MPI_Send ( &h[1], 1, MPI_DOUBLE, id-1, tag, MPI_COMM_WORLD );
+      #endif
     }
 //
 //  Receive H[N+1] from ID+1.
@@ -296,7 +321,9 @@ void update ( int id, int p )
     if ( id < p-1 )
     {
       tag = 1;
+      #ifdef USE_MPI
       MPI_Recv ( &h[n+1], 1,  MPI_DOUBLE, id+1, tag, MPI_COMM_WORLD, &status );
+      #endif 
     }
 //
 //  Send H[N] to ID+1.
@@ -304,7 +331,9 @@ void update ( int id, int p )
     if ( id < p-1 )
     {
       tag = 2;
+      #ifdef USE_MPI
       MPI_Send ( &h[n], 1, MPI_DOUBLE, id+1, tag, MPI_COMM_WORLD );
+      #endif
     }
 //
 //  Receive H[0] from ID-1.
@@ -312,11 +341,14 @@ void update ( int id, int p )
     if ( 0 < id )
     {
       tag = 2;
+      #ifdef USE_MPI
       MPI_Recv ( &h[0], 1, MPI_DOUBLE, id-1, tag, MPI_COMM_WORLD, &status );
+      #endif
     }
 //
 //  Update the temperature based on the four point stencil.
 //
+#pragma omp parallel for
     for ( i = 1; i <= n; i++ )
     {
       h_new[i] = h[i] 

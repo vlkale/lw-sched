@@ -1,5 +1,4 @@
 program main
-
 !*****************************************************************************80
 !
 !!  MAIN is the main program for HEAT_MPI.
@@ -295,7 +294,7 @@ subroutine update ( id, p )
     end if
 !
 !  Update the temperature based on the four point stencil.
-!
+!$OMP parallel for 
     do i = 1, n
       h_new(i) = h(i) &
         + ( time_delta * k / x_delta / x_delta ) &

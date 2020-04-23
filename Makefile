@@ -1,5 +1,5 @@
 #OPTS  = -O3 -lpthread -lrt -lm -openmp
-OPTS  = -O3 -lpthread -lrt -lm
+OPTS  = -O3 -lpthread -lm
 MPICC = mpicc
 MPICXX = mpicxx
 CC  = gcc $(OPTS)
@@ -8,7 +8,7 @@ GXX = c++ $(OPTS)
 CLANGXX = clang++
 DEBUG=-g
 
-OPENMPOPT=-fopenmp
+OPENMPOPT=-Xclang -fopenmp
 
 # Choose the number of cores on the system for make test
 NUMCORES=64
@@ -51,11 +51,11 @@ testAppTwo_omp-lols-uds: $(PERFTESTS_DIR)/testTwoFor_omp-lols.c
 test_tQueue: appFor_vSchedSimple.C
 	$(GXX) -fPIC -g threadedQueue.h threadedQueue.C appFor_threadedQueueSimple.C -DCDY_ $(OPTS) -o test_vSched
 
-test_vSchedforMac: appFor_vSchedSimple.c vSched.h vSched.c pthBarrierforOSX.c
-	$(GXX) -fPIC -g vSched.h vSched.c appFor_vSchedSimple.c pthBarrierforOSX.c -DCDY_ $(OPTS) -o test_vSchedforMac
+test_vSchedforMac: examples/appFor_pthread-lols.c src/vSched.c lib/pthBarrierforOSX.c
+	$(GXX) -o bin/test_vSchedforMac -fPIC include/vSched.h src/vSched.c examples/appFor_pthread-lols.c lib/pthBarrierforOSX.c -DCDY_ $(OPTS)
 
 test_tqueue_forMac: threadedQueue.h threadedQueue.C pthBarrierforOSX.c
-	$(GXX) -fPIC -g threadedQueue.h threadedQueue.C appFor_tqueueSimple.c pthBarrierforOSX.c $(OPTS) -o test_tqueue_forMac
+	$(GXX) -fPIC -g threadedQueue.h threadedQueue.C appFor_tqueueSimple.c lib/pthBarrierforOSX.c $(OPTS)
 
 test_vSchedOpenMP: appFor_vSchedSimpleOpenMP.c vSched.h vSched.c
 	$(GXX) -fPIC -g -I. vSched.h vSched.c appFor_vSchedSimpleOpenMP.c $(OPENMPOPT) $(OPTS) -o test_vSchedOpenMP

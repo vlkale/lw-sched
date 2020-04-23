@@ -124,8 +124,8 @@ int main(int argc, char* argv[])
   if(argc > 6) constraint = atof(argv[6]);
 
   printf("starting OpenMP application using vSched. threads = %d \t probSize = %d \t numIters = %d \n", numThreads, probSize, numIters);
-
   vSched_init(numThreads);
+
   a = (float*)malloc(sizeof(float)*probSize);
   b = (float*)malloc(sizeof(float)*probSize);
 	

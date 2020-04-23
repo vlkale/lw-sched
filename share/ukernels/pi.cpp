@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>                /* MPI header file */
@@ -16,7 +15,7 @@ int main(int argc, char *argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);/* get this process's number (ranges from 0 to nprocs - 1) */
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   nbin= NUM_STEPS/nprocs;
-  MPI_OpenMP version
+  // MPI_OpenMP version
 #pragma omp parallel private(tid)
    {
     int i;

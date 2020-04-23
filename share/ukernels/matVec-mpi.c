@@ -7,9 +7,9 @@
 # include <stdlib.h>
 # include <time.h>
 
-#ifdef _OPENMP
+//#ifdef _OPENMP
 # include "omp.h"
-#endif
+//#endif
 
 int main ( int argc, char *argv[] );
 void timestamp ( );
@@ -82,6 +82,7 @@ int main ( int argc, char *argv[] )
   int my_id;
   int n;
   int num_procs;
+  int num_threads;
   int num_rows;
   int num_workers;
   double pi = 3.141592653589793;
@@ -95,10 +96,13 @@ int main ( int argc, char *argv[] )
   Initialize MPI.
 */
 
+#ifdef _OPENMP
+  printf ("Using OpenMP library");
+#endif
+
   #ifdef USE_MPI
   ierr = MPI_Init ( &argc, &argv );
  
-
   if ( ierr != 0 )
   {
     printf ( "\n" );
@@ -120,8 +124,25 @@ int main ( int argc, char *argv[] )
   num_procs=1;
   #endif
 
+
+  omp_set_num_threads(16);
+ #ifdef USE_MPI
+#pragma omp parallel
+  {
+
+    num_threads = omp_get_max_threads();
+    printf("omp_get_num_threads(): %d\n", num_threads);
+  }
+  
+
+ #else
+ num_threads = 1;
+  printf("OpenMP not available. Setting num_threads: %d\n", num_threads);
+#endif
+  
   if ( my_id == 0 ) 
   {
+
     timestamp ( );
     printf ( "\n" );
     printf ( "MATVEC - Master process:\n" );
@@ -132,6 +153,7 @@ int main ( int argc, char *argv[] )
     printf ( "  Compiled on %s at %s.\n", __DATE__, __TIME__ );
     printf ( "\n" );
     printf ( "  The number of processes is %d.\n", num_procs );
+    printf ( "  The number of threads per process is %d.\n", num_threads);
   }
   printf ( "\n" );
   printf ( "Process %d is active.\n", my_id );
@@ -175,11 +197,12 @@ int main ( int argc, char *argv[] )
   Pick any value of J_ONE between 1 and M.
 */
     j_one = 17;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(16)
     for ( i = 0; i < n; i++ )
     {
       x[i] = sqrt ( 2.0 / ( double ) ( n + 1 ) ) 
         * sin ( ( double ) ( ( i + 1 ) * j_one ) * pi / ( double ) ( n + 1 ) );
+      printf("thread %d doing iteration %d \n", omp_get_thread_num(), i);
     }
 
     printf ( "\n" );

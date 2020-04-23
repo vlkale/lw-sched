@@ -1,0 +1,9 @@
+
+On mac, compile by typing 
+
+mpicxx -Xclang -openmp -pthread -L/usr/local/opt/llvm/lib -I/usr/local/opt/llvm/include -ferror-limit=50 -lomp stencil.C
+
+
+On mac, the line below works better
+
+ sudo mpicc -Xclang -fopenmp -DUSE_MPI -L/usr/local/opt/llvm/lib -I/usr/local/opt/llvm/include -ferror-limit=50 -lomp matVec-mpi.c -o matVec-hyb

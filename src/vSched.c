@@ -4,7 +4,7 @@
 // 
 // Update this file with the file from the repository to get the latest version having new loop scheduling strategies and further enhancements. This code is well-tested and self-contained.
 
-// TODO: ought to have a way to link the code file vSched.c from that repository here in this repository. 
+
 
 #include <pthread.h> // can use other threaded runtime library like ECP's BOLT. The library needs to be generalized to handle different libraries
 
